@@ -2,6 +2,10 @@
 
 Before changing this repository, read `ARCHITECTURE.md` and `DEVELOPMENT.md` completely. They are normative.
 
+Before defining or implementing product behaviour, also read `specs/SFG.md`.
+It records only needs validated by the user final; do not infer or add a
+functional decision without that user's explicit confirmation.
+
 - Keep all business logic in the Rust backend. Components and pages never call Tauri APIs or the backend directly.
 - Follow the prescribed path: component/page → domain store intention → typed frontend client → narrow Tauri command → Rust application/domain service.
 - A Pinia store represents a business domain and exposes intentions/queries, never generic setters. Use composables for UI-only state.
