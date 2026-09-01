@@ -73,3 +73,29 @@ jobs:
           name: PDFForge-windows-x86_64-portable
           path: PDFForge-windows-x86_64.zip
           if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [linux-appimage, windows-portable]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: PDFForge-linux-x86_64-AppImage
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          name: PDFForge-windows-x86_64-portable
+          path: release
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/* --clobber
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes release/*
+          fi

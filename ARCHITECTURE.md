@@ -12,7 +12,7 @@ PDFForge is a portable desktop application owned by Zemoa. This repository curre
 | Supported targets     | Linux x86_64 and Windows x86_64.                                                                                                         |
 | Linux delivery        | AppImage only. It is portable; a host may need FUSE to mount it. Compatibility is targeted at Ubuntu, Debian and Fedora.                 |
 | Windows delivery      | A ZIP containing `PDFForge.exe`; it is not an installer. WebView2 is relied upon for now.                                                |
-| CI                    | GitHub Actions validates pull requests and builds downloadable, non-release artifacts only for `vX.Y.Z` tags.                            |
+| CI                    | GitHub Actions validates pull requests and publishes a GitHub Release with the Linux AppImage and Windows ZIP for `vX.Y.Z` tags.         |
 | Updates and telemetry | Neither automatic updates nor telemetry are included.                                                                                    |
 | Windows signing       | Optional in CI when a PFX certificate and password secrets are supplied; otherwise the artifact is unsigned and may trigger SmartScreen. |
 | Branding              | The generated Tauri icon is temporary until Zemoa supplies the PDFForge visual identity.                                                 |
@@ -81,3 +81,10 @@ ESLint, Prettier, strict TypeScript, Rust formatting and Clippy are mandatory. T
 ## Architectural decision record
 
 Material decisions are recorded in this document under the relevant section, with their date and rationale added when the project evolves. A change to platforms, distribution, security permissions, backend boundaries, state-management policy, persistence, external communication, telemetry, update policy, or a new major dependency is architectural and cannot be merged without updating this file.
+
+### GitHub Releases for version tags (2026-09-01)
+
+Each pushed `vX.Y.Z` tag now publishes a GitHub Release after the Linux and
+Windows portable builds succeed. The Release receives the generated notes and
+contains the AppImage and the ZIP with `PDFForge.exe`; workflow artifacts are
+kept as the build-job outputs as well.

@@ -68,7 +68,11 @@ Keep `pnpm-lock.yaml` and `src-tauri/Cargo.lock` committed. Direct JavaScript de
 
 ## CI, artifacts and signing
 
-`.github/workflows/ci.yml` validates pull requests and pushes on Linux and Windows. `.github/workflows/artifacts.yml` runs only for `v*` tags and uploads, but does not publish, the Linux AppImage and the ZIP containing the Windows executable.
+`.github/workflows/ci.yml` validates pull requests and pushes on Linux and Windows. `.github/workflows/artifacts.yml` runs only for `v*` tags, builds the Linux AppImage and the ZIP containing the Windows executable, then publishes both files in a GitHub Release with automatically generated notes. The build artifacts remain available from the workflow run.
+
+After pushing a version tag, find the distributable files in the repository’s
+**Releases** page. Re-running the workflow for an existing tag replaces the
+Release assets with the newly built files.
 
 Optional Windows signing uses these GitHub Actions secrets:
 
