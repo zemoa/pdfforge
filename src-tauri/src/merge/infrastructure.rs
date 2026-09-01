@@ -55,7 +55,7 @@ fn inspect_file(path: &Path, inspection: &mut SourceInspection) {
         return;
     }
 
-    if let Err(_) = fs::metadata(path) {
+    if fs::metadata(path).is_err() {
         inspection.incidents.push(SourceIncident::Inaccessible {
             path: path.to_path_buf(),
             name: display_name(path),

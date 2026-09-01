@@ -181,11 +181,11 @@ pub fn start_merge(
     tauri::async_runtime::spawn_blocking(move || {
         let engine = LopdfMergeEngine;
         let mut report_progress = |current: usize, total: usize| {
-            let percent = if total == 0 {
-                0
-            } else {
-                ((current.saturating_mul(100)) / total).min(100) as u8
-            };
+            let percent = current
+                .saturating_mul(100)
+                .checked_div(total)
+                .unwrap_or(0)
+                .min(100) as u8;
             let _ = app.emit(
                 MERGE_EVENT,
                 MergeEventDto::Progress {
