@@ -1,0 +1,75 @@
+name: Build portable artifacts
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  linux-appimage:
+    name: Linux AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: >-
+          sudo apt-get update && sudo apt-get install -y
+          libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev
+          libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm tauri build --bundles appimage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PDFForge-linux-x86_64-AppImage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+  windows-portable:
+    name: Windows portable ZIP
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm tauri build --no-bundle
+      - name: Sign executable when a certificate is configured
+        shell: pwsh
+        env:
+          CERTIFICATE_PFX: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          TIMESTAMP_URL: ${{ secrets.WINDOWS_SIGN_TIMESTAMP_URL }}
+        run: |
+          if (-not $env:CERTIFICATE_PFX -or -not $env:CERTIFICATE_PASSWORD) {
+            Write-Host "No Windows signing certificate is configured; leaving the portable executable unsigned."
+            exit 0
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "pdfforge-signing.pfx"
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:CERTIFICATE_PFX))
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
+          $arguments = @("sign", "/fd", "SHA256", "/f", $certificatePath, "/p", $env:CERTIFICATE_PASSWORD)
+          if ($env:TIMESTAMP_URL) { $arguments += @("/tr", $env:TIMESTAMP_URL, "/td", "SHA256") }
+          & $signTool.FullName @arguments "src-tauri/target/release/PDFForge.exe"
+      - name: Create portable archive
+        shell: pwsh
+        run: Compress-Archive -Path src-tauri/target/release/PDFForge.exe -DestinationPath PDFForge-windows-x86_64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PDFForge-windows-x86_64-portable
+          path: PDFForge-windows-x86_64.zip
+          if-no-files-found: error
