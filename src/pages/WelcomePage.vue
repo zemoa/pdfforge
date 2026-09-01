@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { NCard, NLayout, NLayoutContent, NSelect, NSpace, NText, NThing } from "naive-ui";
+import { NButton, NCard, NLayout, NLayoutContent, NSelect, NSpace, NText, NThing } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 import { type AppearanceMode, useAppearance } from "../composables/useAppearance";
 import type { SupportedLocale } from "../i18n";
 
 const { t, locale } = useI18n();
+const router = useRouter();
 const { appearanceMode, selectAppearance } = useAppearance();
 
 const themeOptions = computed(() => [
@@ -33,6 +35,15 @@ function selectLanguage(value: SupportedLocale) {
             <template #header>{{ t("welcome.heading") }}</template>
             <NText depth="3">{{ t("welcome.body") }}</NText>
           </NThing>
+
+          <NSpace class="tools" vertical size="large">
+            <NButton block type="primary" size="large" @click="router.push('/merge')">
+              {{ t("welcome.merge") }}
+            </NButton>
+            <NButton block size="large" @click="router.push('/split')">
+              {{ t("welcome.split") }}
+            </NButton>
+          </NSpace>
 
           <NSpace class="preferences" vertical size="large">
             <label>
@@ -74,6 +85,10 @@ function selectLanguage(value: SupportedLocale) {
 }
 
 .preferences {
+  margin-top: 2rem;
+}
+
+.tools {
   margin-top: 2rem;
 }
 

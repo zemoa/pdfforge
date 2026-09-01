@@ -5,6 +5,11 @@ fn main() {
             "preview_merge_output",
             "start_merge",
             "cancel_merge",
+            "inspect_split_source",
+            "render_split_thumbnails",
+            "preview_split_output",
+            "start_split",
+            "cancel_split",
         ]),
     ))
     .expect("failed to build Tauri application");

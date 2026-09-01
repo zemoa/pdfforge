@@ -64,6 +64,9 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm tauri build --no-bundle
+      - name: Add the embedded PDFium runtime
+        shell: pwsh
+        run: Copy-Item src-tauri/resources/pdfium/windows-x86_64/bin/pdfium.dll src-tauri/target/release/pdfium.dll
       - name: Sign executable when a certificate is configured
         shell: pwsh
         env:
@@ -83,7 +86,7 @@ jobs:
           & $signTool.FullName @arguments "src-tauri/target/release/PDFForge.exe"
       - name: Create portable archive
         shell: pwsh
-        run: Compress-Archive -Path src-tauri/target/release/PDFForge.exe -DestinationPath PDFForge-windows-x86_64.zip
+        run: Compress-Archive -Path src-tauri/target/release/PDFForge.exe,src-tauri/target/release/pdfium.dll -DestinationPath PDFForge-windows-x86_64.zip
       - uses: actions/upload-artifact@v4
         with:
           name: PDFForge-windows-x86_64-portable

@@ -10,6 +10,11 @@
     "allow-inspect-merge-sources",
     "allow-preview-merge-output",
     "allow-start-merge",
-    "allow-cancel-merge"
+    "allow-cancel-merge",
+    "allow-inspect-split-source",
+    "allow-render-split-thumbnails",
+    "allow-preview-split-output",
+    "allow-start-split",
+    "allow-cancel-split"
   ]
 }

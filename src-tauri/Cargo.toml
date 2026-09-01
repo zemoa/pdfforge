@@ -23,7 +23,10 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+base64 = "0.22.1"
+image = "0.25.8"
 lopdf = "0.44.0"
+pdfium-render = { version = "0.9.3", default-features = false, features = ["image_025", "pdfium_7881", "thread_safe"] }
 serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "=2.7.3"

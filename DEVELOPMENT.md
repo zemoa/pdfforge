@@ -56,6 +56,26 @@ On Fedora, use `sudo dnf install` with the same package list. On Ubuntu/Debian, 
 
 The component-to-backend shortcut is forbidden. See the normative layering rules in `ARCHITECTURE.md`.
 
+## Updating the embedded PDFium runtime
+
+FTR-002 embeds the PDFium 7881 x86_64 libraries under `src-tauri/resources/pdfium/`
+for Linux and Windows. Keep their version compatible with the explicit
+`pdfium-render` API feature in `src-tauri/Cargo.toml`; do not use a system PDFium
+or download one at application runtime.
+
+When updating PDFium, download the matching `pdfium-linux-x64.tgz` and
+`pdfium-win-x64.tgz` artifacts from the tagged
+[`bblanchon/pdfium-binaries`](https://github.com/bblanchon/pdfium-binaries)
+release, retain their `LICENSE` and `licenses/` files, update the recorded
+checksums below, regenerate `Cargo.lock`, and run the full quality gate.
+The Linux library is copied into the AppImage by `tauri.conf.json`; the artifact
+workflow copies the Windows DLL beside the executable before creating its ZIP.
+
+Current PDFium 7881 library checksums:
+
+- Linux `lib/libpdfium.so`: `f728930966f503652b92acc89b9374a2eeca00ce42e26dccd3e4b5c5161b2d64`;
+- Windows `bin/pdfium.dll`: `79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118`.
+
 ## i18n and appearance
 
 Place product strings in both `src/i18n/locales/en.ts` and `src/i18n/locales/fr.ts`. Do not add untranslated UI text. The initial locale comes from the system and falls back to English. Theme mode is a UI preference (light, dark, system; default system) retained in localStorage.

@@ -19,10 +19,12 @@ import {
 } from "naive-ui";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 import { useMergeStore } from "../stores/merge/useMergeStore";
 
 const { t } = useI18n();
+const router = useRouter();
 const merge = useMergeStore();
 const showSummary = ref(false);
 const dragIndex = ref<number | null>(null);
@@ -48,9 +50,12 @@ function dropSource(index: number) {
   <NLayout class="application-shell">
     <NLayoutContent content-style="padding: 2rem;">
       <main class="merge-page">
-        <header>
-          <h1>{{ t("merge.heading") }}</h1>
-          <NText depth="3">{{ t("merge.intro") }}</NText>
+        <header class="page-heading">
+          <div>
+            <h1>{{ t("merge.heading") }}</h1>
+            <NText depth="3">{{ t("merge.intro") }}</NText>
+          </div>
+          <NButton quaternary @click="router.push('/')">{{ t("common.home") }}</NButton>
         </header>
 
         <NCard v-if="merge.phase === 'running'" embedded>
@@ -221,6 +226,12 @@ function dropSource(index: number) {
 }
 h1 {
   margin: 0;
+}
+.page-heading {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
 }
 label {
   display: grid;

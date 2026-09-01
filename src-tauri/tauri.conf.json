@@ -26,6 +26,9 @@
   "bundle": {
     "active": true,
     "targets": ["appimage"],
+    "resources": {
+      "resources/pdfium/linux-x86_64/lib/libpdfium.so": "pdfium/linux-x86_64/lib/libpdfium.so"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

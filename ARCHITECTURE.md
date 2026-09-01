@@ -73,6 +73,23 @@ complete a user-requested window close after the merge close guard has allowed
 it. Opening a successful output happens in the Rust backend through the opener
 plugin, never as a renderer-exposed broad path-opening permission.
 
+### PDF split domain and embedded renderer (2026-09-01)
+
+FTR-002 introduces the independent `split` Rust business domain. Its application
+layer owns source inspection, page-selection validation, output-batch
+reservation, thumbnail rendering and page extraction ports. The frontend reaches
+it only through the `split` Pinia store and typed client. A split has one source;
+groups are page sets with no overlap, and all temporary reservations are removed
+on cancellation or failure.
+
+`pdfium-render` backed by the checked-in PDFium 7881 Linux and Windows x86_64
+libraries is the replaceable local implementation for thumbnails and page copy.
+The Linux library and notices are AppImage resources; the Windows portable ZIP
+ships the matching DLL beside `PDFForge.exe`. Neither target needs a system
+library or network connection at runtime. PDFium access is serialized inside the
+infrastructure adapter. Successful output opening remains a backend opener
+action; the renderer receives no path-opening or filesystem permission.
+
 ## Dependency and quality policy
 
 Direct JavaScript dependencies are exact versions in `package.json`; `pnpm-lock.yaml` is committed and authoritative. Rust resolves compatible current Tauri 2 crates into committed `Cargo.lock`. TypeScript is pinned to the latest version supported by `typescript-eslint` (currently 6.0.3), rather than an incompatible newer compiler. Upgrade deliberately, regenerate locks, run the full checks, and record a material architectural change here.
