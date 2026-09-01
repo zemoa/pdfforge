@@ -56,6 +56,22 @@ Vue uses Composition API and strict TypeScript. Naive UI is the only component l
 
 The default capability grants only `core:default`; no filesystem, shell, HTTP, opener, updater, clipboard or other plugin permission is pre-authorized. The CSP allows only local application assets and the Tauri IPC transport. Any new permission or CSP source is an architectural decision and must be documented here before implementation.
 
+### PDF merge domain (2026-09-01)
+
+FTR-001 introduces the `merge` Rust business domain with domain, application,
+infrastructure and presentation/command modules. Its application layer depends
+on ports for source inspection, output reservation, PDF merging and result
+opening. `lopdf` is the initial local implementation of the merge-engine port;
+it is deliberately replaceable without changing the IPC DTOs or Pinia store.
+The UI warns before confirmation when source catalog structures (outlines,
+forms, tagged structure or named destinations) cannot be guaranteed by this
+engine. PDF processing stays local and no source path is persisted.
+
+The main-window capability additionally grants only `dialog:allow-open` for
+the native file and folder selector. Opening a successful output happens in
+the Rust backend through the opener plugin, never as a renderer-exposed broad
+path-opening permission.
+
 ## Dependency and quality policy
 
 Direct JavaScript dependencies are exact versions in `package.json`; `pnpm-lock.yaml` is committed and authoritative. Rust resolves compatible current Tauri 2 crates into committed `Cargo.lock`. TypeScript is pinned to the latest version supported by `typescript-eslint` (currently 6.0.3), rather than an incompatible newer compiler. Upgrade deliberately, regenerate locks, run the full checks, and record a material architectural change here.

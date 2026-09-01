@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-start-merge"
+description = "Enables the start_merge command without any pre-configured scope."
+commands.allow = ["start_merge"]
+
+[[permission]]
+identifier = "deny-start-merge"
+description = "Denies the start_merge command without any pre-configured scope."
+commands.deny = ["start_merge"]

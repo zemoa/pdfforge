@@ -1,8 +1,8 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-import WelcomePage from "../pages/WelcomePage.vue";
+import MergePdfPage from "../pages/MergePdfPage.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
-  routes: [{ path: "/", component: WelcomePage }],
+  routes: [{ path: "/", component: MergePdfPage }],
 });

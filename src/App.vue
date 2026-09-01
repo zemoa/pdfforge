@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { darkTheme, NConfigProvider, type GlobalTheme } from "naive-ui";
+import { darkTheme, NConfigProvider, NMessageProvider, type GlobalTheme } from "naive-ui";
 import { computed } from "vue";
 import { RouterView } from "vue-router";
 
@@ -13,6 +13,6 @@ const naiveTheme = computed<GlobalTheme | null>(() =>
 
 <template>
   <NConfigProvider :theme="naiveTheme">
-    <RouterView />
+    <NMessageProvider><RouterView /></NMessageProvider>
   </NConfigProvider>
 </template>
