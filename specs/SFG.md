@@ -80,6 +80,44 @@ créé s'ouvre à la fin du traitement. Les documents d'origine restent intacts.
 Les pages conservent leur format, leur orientation et leur contenu, y compris
 leurs éléments interactifs.
 
+Une fusion requiert au moins deux PDF. L'utilisateur peut ajouter le même PDF
+plusieurs fois. Il peut ajouter des fichiers ou des dossiers : pour un dossier,
+l'application ajoute uniquement les PDF situés à sa racine, dans l'ordre
+alphabétique, puis l'utilisateur peut modifier librement cet ordre. La liste
+affiche le nom de chaque PDF et son chemin complet au survol.
+
+L'application vérifie chaque PDF dès son ajout. Elle ignore les fichiers qui
+ne sont pas des PDF et affiche un récapitulatif des fichiers ainsi ignorés. Si
+un PDF est protégé par mot de passe, illisible ou inaccessible, elle ne demande
+pas de mot de passe et laisse à l'utilisateur le choix d'annuler toute la
+préparation ou d'ignorer ce seul PDF. Cette règle s'applique également aux PDF
+trouvés dans un dossier. L'utilisateur qui a ignoré un PDF doit le réajouter
+manuellement s'il souhaite le traiter ultérieurement. Si moins de deux PDF
+valides restent dans la liste, la fusion est désactivée tout en conservant les
+PDF valides déjà ajoutés.
+
+Le nom de sortie reçoit automatiquement l'extension `.pdf` si elle est absente.
+Le dossier de destination peut être choisi ou renseigné par collage de son
+chemin ; il doit déjà exister. L'utilisateur peut corriger un dossier
+inaccessible ou non inscriptible sans perdre sa préparation. Si un fichier de
+sortie du même nom existe, l'application crée `document-1.pdf`, puis augmente
+ce numéro autant que nécessaire. Elle vérifie à nouveau la disponibilité du nom
+juste avant l'écriture.
+
+Avant la création, le récapitulatif présente l'ordre et les noms des PDF source
+ainsi que le chemin complet du PDF final, puis demande confirmation. Toute
+modification de la préparation impose une nouvelle confirmation. Après la
+confirmation, la préparation ne peut plus être modifiée pendant le traitement.
+Si l'application détecte qu'elle ne peut pas préserver un élément interactif,
+elle en avertit l'utilisateur.
+
+Le traitement affiche un avancement chiffré et peut être annulé à tout moment.
+Une annulation ou une erreur supprime tout fichier de sortie partiel créé. Après
+une annulation, l'application revient immédiatement à un écran vide. Après une
+réussite, elle affiche une notification brève, ouvre immédiatement le PDF créé,
+puis revient à un écran vide. En cas d'échec, elle affiche un message simple et
+conserve la préparation pour permettre une correction et une nouvelle tentative.
+
 ### Scinder un PDF
 
 L'utilisateur ajoute un PDF et visualise les miniatures de ses pages. Il peut
