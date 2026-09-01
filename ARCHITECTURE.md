@@ -67,10 +67,11 @@ The UI warns before confirmation when source catalog structures (outlines,
 forms, tagged structure or named destinations) cannot be guaranteed by this
 engine. PDF processing stays local and no source path is persisted.
 
-The main-window capability additionally grants only `dialog:allow-open` for
-the native file and folder selector. Opening a successful output happens in
-the Rust backend through the opener plugin, never as a renderer-exposed broad
-path-opening permission.
+The main-window capability additionally grants `dialog:allow-open` for the
+native file and folder selector and `core:window:allow-destroy` so Tauri can
+complete a user-requested window close after the merge close guard has allowed
+it. Opening a successful output happens in the Rust backend through the opener
+plugin, never as a renderer-exposed broad path-opening permission.
 
 ## Dependency and quality policy
 
