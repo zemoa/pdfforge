@@ -74,6 +74,11 @@ After pushing a version tag, find the distributable files in the repository’s
 **Releases** page. Re-running the workflow for an existing tag replaces the
 Release assets with the newly built files.
 
+The CI and artifact workflows cache Cargo’s registry, Git dependencies and
+`src-tauri/target` independently for each operating system. A cache is reused
+while `src-tauri/Cargo.lock` is unchanged; the first build after changing Rust
+dependencies is expected to compile from scratch.
+
 Optional Windows signing uses these GitHub Actions secrets:
 
 - `WINDOWS_CERTIFICATE_PFX`: base64-encoded PFX certificate;
