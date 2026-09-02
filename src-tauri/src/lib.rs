@@ -4,6 +4,7 @@
 //! narrowly-scoped Tauri command adapters. See ARCHITECTURE.md before adding one.
 
 mod merge;
+mod redaction;
 mod split;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -12,12 +13,15 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(merge::presentation::MergeRuntime::default())
+        .manage(redaction::presentation::RedactionRuntime::default())
         .manage(split::presentation::SplitRuntime::default())
         .invoke_handler(tauri::generate_handler![
             merge::presentation::inspect_merge_sources,
             merge::presentation::preview_merge_output,
             merge::presentation::start_merge,
             merge::presentation::cancel_merge,
+            redaction::presentation::inspect_redaction_source,
+            redaction::presentation::render_redaction_page,
             split::presentation::inspect_split_source,
             split::presentation::render_split_thumbnails,
             split::presentation::preview_split_output,

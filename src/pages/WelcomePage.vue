@@ -43,6 +43,9 @@ function selectLanguage(value: SupportedLocale) {
             <NButton block size="large" @click="router.push('/split')">
               {{ t("welcome.split") }}
             </NButton>
+            <NButton block size="large" @click="router.push('/redact')">
+              {{ t("welcome.redact") }}
+            </NButton>
           </NSpace>
 
           <NSpace class="preferences" vertical size="large">

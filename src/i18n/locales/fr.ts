@@ -6,6 +6,7 @@ export default {
     heading: "PDFForge",
     language: "Langue",
     merge: "Fusionner des PDF",
+    redact: "Masquer du texte dans un PDF",
     split: "Scinder un PDF",
   },
   merge: {
@@ -96,5 +97,33 @@ export default {
     summaryTitle: "Confirmer la scission",
     thumbnailHint:
       "Les miniatures sont chargées progressivement. Cliquez une page pour la sélectionner.",
+  },
+  redaction: {
+    addSource: "Ajouter un PDF",
+    clearSelections: "Effacer toutes les sélections",
+    dropHint: "Vous pouvez aussi déposer un unique PDF dans cette fenêtre.",
+    emptySelections: "Sélectionnez des mots sur une page pour préparer leur masquage.",
+    emptySource: "Ajoutez un PDF pour préparer un masquage de texte.",
+    error: "La préparation du masquage de texte a échoué",
+    heading: "Masquer du texte dans un PDF",
+    intro:
+      "Sélectionnez les mots à masquer définitivement lors d’une étape ultérieure. Votre PDF reste sur cet ordinateur.",
+    nextPage: "Suivante",
+    noSelectableText:
+      "Cette page ne contient pas de texte sélectionnable. Le dessin d’un rectangle sera disponible à l’étape de masquage par zone.",
+    ofPages: "sur {count}",
+    pageCount: "{count} pages",
+    pagePreview: "Aperçu de la page {page}",
+    previousPage: "Précédente",
+    remove: "Retirer",
+    removeSource: "Retirer ce PDF",
+    replaceSource: "Choisir un autre PDF",
+    selectWord: "Sélectionner le mot {word}",
+    selection: "Page {page} : {word}",
+    selectionHint:
+      "Cliquez sur un mot pour le sélectionner. Faites glisser la souris d’un mot à un autre pour sélectionner le texte intermédiaire.",
+    selections: "Sélections ({count})",
+    source: "PDF source",
+    viewer: "Aperçu de la sélection de texte",
   },
 } as const;

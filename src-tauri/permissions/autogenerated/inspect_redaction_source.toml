@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-inspect-redaction-source"
+description = "Enables the inspect_redaction_source command without any pre-configured scope."
+commands.allow = ["inspect_redaction_source"]
+
+[[permission]]
+identifier = "deny-inspect-redaction-source"
+description = "Denies the inspect_redaction_source command without any pre-configured scope."
+commands.deny = ["inspect_redaction_source"]

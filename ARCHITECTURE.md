@@ -90,6 +90,19 @@ library or network connection at runtime. PDFium access is serialized inside the
 infrastructure adapter. Successful output opening remains a backend opener
 action; the renderer receives no path-opening or filesystem permission.
 
+### PDF text-redaction preparation (2026-09-02)
+
+FTR-003 introduces the independent `redaction` Rust business domain for
+preparing text redactions. Its source inspector accepts one local readable PDF
+without password prompting, while its PDFium-backed page renderer emits only
+the current rasterized page and normalized word bounds. The renderer sends
+selection intentions through the `redaction` Pinia store and keeps source and
+selection data in memory only; no path, page image or selection survives an
+application restart. The main-window capability grants only the two narrow
+inspection and page-rendering commands, alongside the existing native file
+dialog permission. Rectangle preparation and irreversible PDF rewriting remain
+separate future domain use cases.
+
 ## Dependency and quality policy
 
 Direct JavaScript dependencies are exact versions in `package.json`; `pnpm-lock.yaml` is committed and authoritative. Rust resolves compatible current Tauri 2 crates into committed `Cargo.lock`. TypeScript is pinned to the latest version supported by `typescript-eslint` (currently 6.0.3), rather than an incompatible newer compiler. Upgrade deliberately, regenerate locks, run the full checks, and record a material architectural change here.

@@ -11,6 +11,8 @@
     "allow-preview-merge-output",
     "allow-start-merge",
     "allow-cancel-merge",
+    "allow-inspect-redaction-source",
+    "allow-render-redaction-page",
     "allow-inspect-split-source",
     "allow-render-split-thumbnails",
     "allow-preview-split-output",
