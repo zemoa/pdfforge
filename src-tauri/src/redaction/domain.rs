@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourcePdf {
@@ -48,6 +51,79 @@ impl NormalizedRect {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct RedactionPlan {
+    selections: BTreeMap<usize, Vec<NormalizedRect>>,
+}
+
+impl RedactionPlan {
+    pub fn new(
+        selections: Vec<(usize, Vec<NormalizedRect>)>,
+        page_count: usize,
+    ) -> Result<Self, RedactionValidationError> {
+        let mut by_page = BTreeMap::new();
+        for (page, rectangles) in selections {
+            if page == 0 || page > page_count {
+                return Err(RedactionValidationError::PageOutOfBounds);
+            }
+            if rectangles.is_empty() {
+                continue;
+            }
+            by_page
+                .entry(page)
+                .or_insert_with(Vec::new)
+                .extend(rectangles);
+        }
+        if by_page.is_empty() {
+            return Err(RedactionValidationError::EmptySelection);
+        }
+        Ok(Self {
+            selections: by_page,
+        })
+    }
+
+    pub fn rectangles_for_page(&self, page: usize) -> &[NormalizedRect] {
+        self.selections
+            .get(&page)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OutputSpec {
+    pub directory: PathBuf,
+    pub file_name: String,
+}
+
+impl OutputSpec {
+    pub fn new(directory: PathBuf, name: &str) -> Result<Self, RedactionValidationError> {
+        let name = name.trim();
+        if name.is_empty() {
+            return Err(RedactionValidationError::EmptyOutputName);
+        }
+        if !directory.is_dir() {
+            return Err(RedactionValidationError::DirectoryDoesNotExist);
+        }
+        Ok(Self {
+            directory,
+            file_name: if name.to_ascii_lowercase().ends_with(".pdf") {
+                name.to_owned()
+            } else {
+                format!("{name}.pdf")
+            },
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RedactionValidationError {
+    EmptySelection,
+    PageOutOfBounds,
+    EmptyOutputName,
+    DirectoryDoesNotExist,
+}
+
 pub fn display_name(path: &Path) -> String {
     path.file_name()
         .and_then(|name| name.to_str())
@@ -75,5 +151,30 @@ mod tests {
     #[test]
     fn rejects_a_rectangle_outside_the_page() {
         assert_eq!(NormalizedRect::new(0.8, 0.1, 0.3, 0.2), None);
+    }
+
+    #[test]
+    fn rejects_a_plan_without_a_redaction() {
+        assert_eq!(
+            RedactionPlan::new(vec![(1, vec![])], 1),
+            Err(RedactionValidationError::EmptySelection)
+        );
+    }
+
+    #[test]
+    fn rejects_a_plan_that_references_a_missing_page() {
+        let rectangle = NormalizedRect::new(0.1, 0.1, 0.2, 0.2).expect("fixture is valid");
+
+        assert_eq!(
+            RedactionPlan::new(vec![(2, vec![rectangle])], 1),
+            Err(RedactionValidationError::PageOutOfBounds)
+        );
+    }
+
+    #[test]
+    fn normalizes_the_output_extension() {
+        let output = OutputSpec::new(std::env::temp_dir(), "masked").expect("output is valid");
+
+        assert_eq!(output.file_name, "masked.pdf");
     }
 }

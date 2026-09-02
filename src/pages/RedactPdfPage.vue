@@ -4,18 +4,21 @@ import {
   NButton,
   NCard,
   NEmpty,
+  NInput,
   NInputNumber,
   NLayout,
   NLayoutContent,
   NLayoutSider,
   NList,
   NListItem,
+  NModal,
+  NProgress,
   NSpin,
   NSpace,
   NText,
   NThing,
 } from "naive-ui";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
@@ -38,6 +41,7 @@ const viewerPage = ref<HTMLElement | null>(null);
 const draftZone = ref<NormalizedRect | null>(null);
 const zoneGesture = ref<ZoneGesture | null>(null);
 const selectionMode = ref<SelectionMode>("text");
+const showSummary = ref(false);
 const resizeHandles: ZoneResizeHandle[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
 
 type ZoneGesture =
@@ -63,9 +67,22 @@ const isZoneMode = computed(
 
 onMounted(() => {
   void redaction.initialize();
+  void redaction.protectWindowClose(async () => window.confirm(t("redaction.closeWhileRunning")));
   window.addEventListener("pointermove", updateZoneGesture);
   window.addEventListener("pointerup", finishSelections);
 });
+
+watch(
+  () => redaction.outcome,
+  (outcome) => {
+    if (!outcome) return;
+    window.setTimeout(() => redaction.dismissOutcome(), 3500);
+  },
+);
+
+async function openSummary() {
+  if (await redaction.requestSummary()) showSummary.value = true;
+}
 onBeforeUnmount(() => {
   window.removeEventListener("pointermove", updateZoneGesture);
   window.removeEventListener("pointerup", finishSelections);
@@ -257,8 +274,36 @@ function finishZoneGesture(event: PointerEvent) {
         >
           {{ redaction.errorMessage }}
         </NAlert>
+        <NAlert
+          v-if="redaction.outcome === 'succeeded'"
+          type="success"
+          :title="t('redaction.success')"
+        >
+          {{ t("redaction.successBody") }}
+        </NAlert>
+        <NAlert
+          v-if="redaction.outcome === 'cancelled'"
+          type="info"
+          :title="t('redaction.cancelled')"
+        >
+          {{ t("redaction.cancelledBody") }}
+        </NAlert>
 
-        <template v-if="redaction.source">
+        <NCard v-if="redaction.phase === 'running'" embedded>
+          <NThing :title="t('redaction.processing')">
+            <NText depth="3">{{ t("redaction.progress", redaction.progress) }}</NText>
+          </NThing>
+          <NProgress
+            :percentage="redaction.progress.percent"
+            indicator-placement="inside"
+            processing
+          />
+          <NButton type="error" @click="redaction.cancelRedaction">{{
+            t("redaction.cancel")
+          }}</NButton>
+        </NCard>
+
+        <template v-else-if="redaction.source">
           <NSpace v-if="redaction.hasSelectableText" align="center" class="selection-mode">
             <NText depth="3">{{ t("redaction.selectionMode") }}</NText>
             <NButton
@@ -371,7 +416,9 @@ function finishZoneGesture(event: PointerEvent) {
 
     <NLayoutSider bordered :width="280" class="details-sidebar">
       <aside class="sidebar-content">
-        <NButton block @click="router.push('/')">{{ t("common.home") }}</NButton>
+        <NButton block :disabled="redaction.phase === 'running'" @click="router.push('/')">{{
+          t("common.home")
+        }}</NButton>
 
         <NCard size="small" embedded :title="t('redaction.source')">
           <template v-if="redaction.source">
@@ -381,12 +428,19 @@ function finishZoneGesture(event: PointerEvent) {
               }}</NText>
             </NThing>
             <NSpace vertical>
-              <NButton block @click="redaction.choosePdfFile">{{
-                t("redaction.replaceSource")
-              }}</NButton>
-              <NButton block type="error" @click="redaction.resetPreparation">{{
-                t("redaction.removeSource")
-              }}</NButton>
+              <NButton
+                block
+                :disabled="redaction.phase === 'running'"
+                @click="redaction.choosePdfFile"
+                >{{ t("redaction.replaceSource") }}</NButton
+              >
+              <NButton
+                block
+                type="error"
+                :disabled="redaction.phase === 'running'"
+                @click="redaction.resetPreparation"
+                >{{ t("redaction.removeSource") }}</NButton
+              >
             </NSpace>
           </template>
           <template v-else>
@@ -398,7 +452,9 @@ function finishZoneGesture(event: PointerEvent) {
           <NCard size="small" embedded :title="t('redaction.viewer')">
             <NSpace align="center" justify="center">
               <NButton
-                :disabled="!redaction.canGoPrevious || redaction.loadingPage"
+                :disabled="
+                  redaction.phase === 'running' || !redaction.canGoPrevious || redaction.loadingPage
+                "
                 @click="redaction.goToPreviousPage"
               >
                 {{ t("redaction.previousPage") }}
@@ -408,11 +464,14 @@ function finishZoneGesture(event: PointerEvent) {
                 :min="1"
                 :max="redaction.source.pageCount"
                 :show-button="false"
+                :disabled="redaction.phase === 'running'"
                 class="page-number"
                 @update:value="redaction.goToPage"
               />
               <NButton
-                :disabled="!redaction.canGoNext || redaction.loadingPage"
+                :disabled="
+                  redaction.phase === 'running' || !redaction.canGoNext || redaction.loadingPage
+                "
                 @click="redaction.goToNextPage"
               >
                 {{ t("redaction.nextPage") }}
@@ -422,21 +481,101 @@ function finishZoneGesture(event: PointerEvent) {
               t("redaction.ofPages", { count: redaction.source.pageCount })
             }}</NText>
             <NSpace align="center" justify="center" class="zoom-controls">
-              <NButton size="small" :disabled="redaction.zoom <= 0.75" @click="redaction.zoomOut"
+              <NButton
+                size="small"
+                :disabled="redaction.phase === 'running' || redaction.zoom <= 0.75"
+                @click="redaction.zoomOut"
                 >−</NButton
               >
-              <NButton size="small" @click="redaction.resetZoom"
+              <NButton
+                size="small"
+                :disabled="redaction.phase === 'running'"
+                @click="redaction.resetZoom"
                 >{{ Math.round(redaction.zoom * 100) }}%</NButton
               >
-              <NButton size="small" :disabled="redaction.zoom >= 2" @click="redaction.zoomIn"
+              <NButton
+                size="small"
+                :disabled="redaction.phase === 'running' || redaction.zoom >= 2"
+                @click="redaction.zoomIn"
                 >+</NButton
               >
             </NSpace>
           </NCard>
+
+          <NCard size="small" embedded :title="t('redaction.destination')">
+            <label>
+              {{ t("redaction.outputName") }}
+              <NInput
+                :value="redaction.outputName"
+                :disabled="redaction.phase === 'running'"
+                :placeholder="t('redaction.outputPlaceholder')"
+                @update:value="redaction.renameOutput"
+              />
+            </label>
+            <label>
+              {{ t("redaction.destinationPath") }}
+              <NInput
+                :value="redaction.destination"
+                :disabled="redaction.phase === 'running'"
+                :placeholder="t('redaction.destinationPlaceholder')"
+                @update:value="redaction.chooseDestination"
+              />
+            </label>
+            <NButton
+              :disabled="redaction.phase === 'running'"
+              @click="redaction.chooseDestinationFolder"
+              >{{ t("redaction.browse") }}</NButton
+            >
+          </NCard>
+          <NButton
+            block
+            type="primary"
+            :disabled="!redaction.canRequestSummary"
+            @click="openSummary"
+          >
+            {{ t("redaction.review") }}
+          </NButton>
         </template>
       </aside>
     </NLayoutSider>
   </NLayout>
+
+  <NModal
+    v-model:show="showSummary"
+    preset="card"
+    :title="t('redaction.summaryTitle')"
+    style="width: min(92vw, 42rem)"
+  >
+    <NThing :title="redaction.source?.name" :description="redaction.source?.path" />
+    <NList bordered>
+      <template v-for="selection in redaction.selectionSummary" :key="selection.page">
+        <NListItem v-for="word in selection.words" :key="word.index">{{
+          t("redaction.selection", { page: selection.page, word: word.text })
+        }}</NListItem>
+        <NListItem v-for="(zone, index) in selection.zones" :key="zone.id">{{
+          t("redaction.zoneSelection", { page: selection.page, zone: index + 1 })
+        }}</NListItem>
+      </template>
+    </NList>
+    <p>
+      <strong>{{ t("redaction.output") }}</strong> {{ redaction.outputPreview?.outputPath }}
+    </p>
+    <NAlert type="warning">{{ t("redaction.irreversibleWarning") }}</NAlert>
+    <template #action>
+      <NSpace justify="end">
+        <NButton @click="showSummary = false">{{ t("redaction.back") }}</NButton>
+        <NButton
+          type="primary"
+          @click="
+            showSummary = false;
+            redaction.confirmRedaction();
+          "
+        >
+          {{ t("redaction.confirm") }}
+        </NButton>
+      </NSpace>
+    </template>
+  </NModal>
 </template>
 
 <style scoped>

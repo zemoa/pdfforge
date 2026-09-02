@@ -136,7 +136,10 @@ rectangle sur une zone à masquer, notamment une image ou une icône. Il peut af
 préparer plusieurs zones noires à masquer. Après confirmation, l'application crée un
 nouveau PDF sans les informations masquées, qui ne doivent pas pouvoir être
 récupérées. Avant confirmation, il peut vérifier, modifier ou retirer les
-zones sélectionnées. Le document d'origine reste intact.
+zones sélectionnées. Le document d'origine reste intact. Par défaut, le nom du
+nouveau fichier est `<nom du document d'origine>-masked.pdf` et son dossier de
+destination est celui du document d'origine ; l'utilisateur peut modifier ces
+deux valeurs avant confirmation.
 
 ### Gérer les incidents
 

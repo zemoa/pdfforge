@@ -1,5 +1,3 @@
-export type SelectionsByPage = Record<number, Record<number, string>>;
-
 export interface NormalizedPoint {
   x: number;
   y: number;
@@ -11,6 +9,13 @@ export interface NormalizedRect {
   width: number;
   height: number;
 }
+
+export interface TextSelection {
+  text: string;
+  bounds: NormalizedRect[];
+}
+
+export type SelectionsByPage = Record<number, Record<number, TextSelection>>;
 
 export interface ZoneSelection {
   id: number;
@@ -135,6 +140,7 @@ export function toggleWord(
   page: number,
   wordIndex: number,
   text: string,
+  bounds: NormalizedRect[],
 ): SelectionsByPage {
   const currentPage = selections[page] ?? {};
   if (currentPage[wordIndex] !== undefined) {
@@ -144,7 +150,7 @@ export function toggleWord(
       ? Object.fromEntries(Object.entries(selections).filter(([key]) => Number(key) !== page))
       : { ...selections, [page]: remaining };
   }
-  return { ...selections, [page]: { ...currentPage, [wordIndex]: text } };
+  return { ...selections, [page]: { ...currentPage, [wordIndex]: { text, bounds } } };
 }
 
 export function addWordRange(
@@ -152,14 +158,14 @@ export function addWordRange(
   page: number,
   first: number,
   last: number,
-  words: readonly { index: number; text: string }[],
+  words: readonly { index: number; text: string; bounds: NormalizedRect[] }[],
 ): SelectionsByPage {
   const lower = Math.min(first, last);
   const upper = Math.max(first, last);
   const additions = Object.fromEntries(
     words
       .filter((word) => word.index >= lower && word.index <= upper)
-      .map((word) => [word.index, word.text]),
+      .map((word) => [word.index, { text: word.text, bounds: word.bounds }]),
   );
   return { ...selections, [page]: { ...(selections[page] ?? {}), ...additions } };
 }

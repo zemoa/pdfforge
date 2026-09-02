@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-redaction-output"
+description = "Enables the preview_redaction_output command without any pre-configured scope."
+commands.allow = ["preview_redaction_output"]
+
+[[permission]]
+identifier = "deny-preview-redaction-output"
+description = "Denies the preview_redaction_output command without any pre-configured scope."
+commands.deny = ["preview_redaction_output"]

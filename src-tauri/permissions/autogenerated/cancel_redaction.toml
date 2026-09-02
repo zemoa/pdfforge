@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-cancel-redaction"
+description = "Enables the cancel_redaction command without any pre-configured scope."
+commands.allow = ["cancel_redaction"]
+
+[[permission]]
+identifier = "deny-cancel-redaction"
+description = "Denies the cancel_redaction command without any pre-configured scope."
+commands.deny = ["cancel_redaction"]

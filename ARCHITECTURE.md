@@ -90,7 +90,7 @@ library or network connection at runtime. PDFium access is serialized inside the
 infrastructure adapter. Successful output opening remains a backend opener
 action; the renderer receives no path-opening or filesystem permission.
 
-### PDF redaction preparation (2026-09-02)
+### PDF redaction preparation and definitive output (2026-09-02)
 
 FTR-003 and FTR-004 introduce the independent `redaction` Rust business domain
 for preparing text and zone redactions. Its source inspector accepts one local
@@ -99,9 +99,16 @@ emits only the current rasterized page and normalized word bounds. The renderer
 sends selection intentions through the `redaction` Pinia store and keeps source,
 text selections, and normalized rectangle selections in memory only; no path,
 page image or selection survives an application restart. The main-window
-capability grants only the two narrow inspection and page-rendering commands,
-alongside the existing native file-dialog permission. Irreversible PDF rewriting
-remains a separate future domain use case.
+capability grants only narrow inspection, page-rendering and definitive-output
+commands, alongside the existing native file-dialog permission. FTR-005 creates
+a new document by rendering every source page locally at 300 ppi, applying the
+selected black rectangles to the raster image, and writing only those images to
+the result. This is deliberately a security-first choice: no source page objects,
+text layer, annotations, links, forms, bookmarks or metadata are copied, so
+masked content cannot be recovered from the resulting PDF. The output retains
+the rendered page dimensions and visual orientation, but is no longer
+interactive or text-selectable. Progress and cancellation are owned by the
+redaction runtime; a cancellation or failure removes its reserved output file.
 
 ## Dependency and quality policy
 

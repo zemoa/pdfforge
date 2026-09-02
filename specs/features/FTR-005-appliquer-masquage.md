@@ -5,6 +5,10 @@
 Créer un nouveau PDF à partir des sélections préparées, avec des zones noires
 et des informations masquées qui ne peuvent plus être récupérées.
 
+Par défaut, le fichier obtenu se nomme `<nom du document d'origine>-masked.pdf`
+et est enregistré dans le dossier du document d'origine. L'utilisateur peut
+modifier son nom et sa destination avant confirmation.
+
 ## Exigences SFG couvertes
 
 - F-03, F-07 à F-14, F-17 à F-19, F-23 à F-29, F-35 et F-37 à F-39 ;
