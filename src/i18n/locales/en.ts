@@ -6,8 +6,12 @@ export default {
     heading: "PDFForge",
     language: "Language",
     merge: "Merge PDF files",
+    mergeDescription: "Combine several documents into a single PDF.",
     redact: "Redact a PDF",
+    redactDescription: "Permanently remove sensitive information.",
     split: "Split a PDF",
+    splitDescription: "Extract pages or create several documents.",
+    tools: "PDF tools",
   },
   merge: {
     addFiles: "Add PDF files",
