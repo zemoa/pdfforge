@@ -19,6 +19,13 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
+import {
+  rectangleFromPoints,
+  type NormalizedPoint,
+  type NormalizedRect,
+  type ZoneResizeHandle,
+  type ZoneSelection,
+} from "../stores/redaction/selection";
 import { useRedactionStore } from "../stores/redaction/useRedactionStore";
 
 const { t } = useI18n();
@@ -27,18 +34,41 @@ const redaction = useRedactionStore();
 const dragAnchor = ref<number | null>(null);
 const dragEnd = ref<number | null>(null);
 const selectionsSidebarCollapsed = ref(false);
+const viewerPage = ref<HTMLElement | null>(null);
+const draftZone = ref<NormalizedRect | null>(null);
+const zoneGesture = ref<ZoneGesture | null>(null);
+const selectionMode = ref<SelectionMode>("text");
+const resizeHandles: ZoneResizeHandle[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
+
+type ZoneGesture =
+  | { kind: "create"; start: NormalizedPoint }
+  | { kind: "move"; id: number; start: NormalizedPoint; original: NormalizedRect }
+  | {
+      kind: "resize";
+      id: number;
+      start: NormalizedPoint;
+      original: NormalizedRect;
+      handle: ZoneResizeHandle;
+    };
+
+type SelectionMode = "text" | "zone";
 
 const viewerStyle = computed(() => ({
   aspectRatio: `${redaction.renderedPage?.aspectRatio ?? 1} / 1`,
   width: `${redaction.zoom * 100}%`,
 }));
+const isZoneMode = computed(
+  () => redaction.canDrawZones && (!redaction.hasSelectableText || selectionMode.value === "zone"),
+);
 
 onMounted(() => {
   void redaction.initialize();
-  window.addEventListener("pointerup", finishWordSelection);
+  window.addEventListener("pointermove", updateZoneGesture);
+  window.addEventListener("pointerup", finishSelections);
 });
 onBeforeUnmount(() => {
-  window.removeEventListener("pointerup", finishWordSelection);
+  window.removeEventListener("pointermove", updateZoneGesture);
+  window.removeEventListener("pointerup", finishSelections);
   redaction.dispose();
 });
 
@@ -68,6 +98,77 @@ function isInDragRange(wordIndex: number) {
     wordIndex >= Math.min(dragAnchor.value, dragEnd.value) &&
     wordIndex <= Math.max(dragAnchor.value, dragEnd.value)
   );
+}
+
+function finishSelections(event: PointerEvent) {
+  finishWordSelection();
+  finishZoneGesture(event);
+}
+
+function pointFromPointer(event: PointerEvent): NormalizedPoint | null {
+  const bounds = viewerPage.value?.getBoundingClientRect();
+  if (!bounds || bounds.width === 0 || bounds.height === 0) return null;
+  return {
+    x: (event.clientX - bounds.left) / bounds.width,
+    y: (event.clientY - bounds.top) / bounds.height,
+  };
+}
+
+function rectangleStyle(rectangle: NormalizedRect) {
+  return {
+    left: `${rectangle.left * 100}%`,
+    top: `${rectangle.top * 100}%`,
+    width: `${rectangle.width * 100}%`,
+    height: `${rectangle.height * 100}%`,
+  };
+}
+
+function beginZone(event: PointerEvent) {
+  if (!isZoneMode.value || event.button !== 0) return;
+  const start = pointFromPointer(event);
+  if (!start) return;
+  zoneGesture.value = { kind: "create", start };
+  draftZone.value = null;
+}
+
+function beginZoneMove(event: PointerEvent, zone: ZoneSelection) {
+  if (event.button !== 0) return;
+  const start = pointFromPointer(event);
+  if (!start) return;
+  zoneGesture.value = { kind: "move", id: zone.id, start, original: zone.rect };
+}
+
+function beginZoneResize(event: PointerEvent, zone: ZoneSelection, handle: ZoneResizeHandle) {
+  if (event.button !== 0) return;
+  const start = pointFromPointer(event);
+  if (!start) return;
+  zoneGesture.value = { kind: "resize", id: zone.id, start, original: zone.rect, handle };
+}
+
+function updateZoneGesture(event: PointerEvent) {
+  const gesture = zoneGesture.value;
+  const point = pointFromPointer(event);
+  if (!gesture || !point) return;
+
+  if (gesture.kind === "create") {
+    draftZone.value = rectangleFromPoints(gesture.start, point);
+  } else if (gesture.kind === "move") {
+    redaction.moveZoneSelection(gesture.id, gesture.original, {
+      x: point.x - gesture.start.x,
+      y: point.y - gesture.start.y,
+    });
+  } else {
+    redaction.resizeZoneSelection(gesture.id, gesture.original, gesture.handle, point);
+  }
+}
+
+function finishZoneGesture(event: PointerEvent) {
+  const gesture = zoneGesture.value;
+  if (!gesture) return;
+  const end = pointFromPointer(event);
+  if (gesture.kind === "create" && end) redaction.addZoneSelection(gesture.start, end);
+  zoneGesture.value = null;
+  draftZone.value = null;
 }
 </script>
 
@@ -109,6 +210,21 @@ function isInDragRange(wordIndex: number) {
                   </NButton>
                 </template>
               </NListItem>
+              <NListItem v-for="(zone, index) in selection.zones" :key="zone.id">
+                <NText>{{
+                  t("redaction.zoneSelection", { page: selection.page, zone: index + 1 })
+                }}</NText>
+                <template #suffix>
+                  <NButton
+                    quaternary
+                    type="error"
+                    size="small"
+                    @click="redaction.removeZoneSelection(selection.page, zone.id)"
+                  >
+                    {{ t("redaction.remove") }}
+                  </NButton>
+                </template>
+              </NListItem>
             </template>
           </NList>
           <NButton
@@ -143,6 +259,23 @@ function isInDragRange(wordIndex: number) {
         </NAlert>
 
         <template v-if="redaction.source">
+          <NSpace v-if="redaction.hasSelectableText" align="center" class="selection-mode">
+            <NText depth="3">{{ t("redaction.selectionMode") }}</NText>
+            <NButton
+              size="small"
+              :type="selectionMode === 'text' ? 'primary' : 'default'"
+              @click="selectionMode = 'text'"
+            >
+              {{ t("redaction.selectTextMode") }}
+            </NButton>
+            <NButton
+              size="small"
+              :type="selectionMode === 'zone' ? 'primary' : 'default'"
+              @click="selectionMode = 'zone'"
+            >
+              {{ t("redaction.drawZoneMode") }}
+            </NButton>
+          </NSpace>
           <div class="viewer-scroll">
             <NSpin :show="redaction.loadingPage">
               <div v-if="redaction.renderedPage" class="viewer-page" :style="viewerStyle">
@@ -167,23 +300,63 @@ function isInDragRange(wordIndex: number) {
                     }"
                     type="button"
                     :aria-label="t('redaction.selectWord', { word: word.text })"
+                    :tabindex="isZoneMode ? -1 : 0"
                     @pointerdown.prevent="beginWordSelection(word.index)"
                     @pointerenter="extendWordSelection(word.index)"
                     @keydown.enter.prevent="redaction.toggleTextWord(word.index)"
                     @keydown.space.prevent="redaction.toggleTextWord(word.index)"
                   />
                 </template>
+                <div
+                  v-if="redaction.canDrawZones"
+                  ref="viewerPage"
+                  class="zone-drawing-layer"
+                  :class="{ interactive: isZoneMode }"
+                  @pointerdown.prevent="beginZone"
+                >
+                  <div
+                    v-for="zone in redaction.zonesOnCurrentPage"
+                    :key="zone.id"
+                    class="zone-preview"
+                    :style="rectangleStyle(zone.rect)"
+                    :aria-label="
+                      t('redaction.zoneSelection', {
+                        page: zone.page,
+                        zone: zone.id,
+                      })
+                    "
+                    role="group"
+                    @pointerdown.stop.prevent="beginZoneMove($event, zone)"
+                  >
+                    <button
+                      v-for="handle in resizeHandles"
+                      :key="handle"
+                      class="zone-handle"
+                      :class="handle"
+                      type="button"
+                      :aria-label="t('redaction.resizeZone')"
+                      @pointerdown.stop.prevent="beginZoneResize($event, zone, handle)"
+                    />
+                  </div>
+                  <div
+                    v-if="draftZone"
+                    class="zone-preview zone-draft"
+                    :style="rectangleStyle(draftZone)"
+                  />
+                </div>
               </div>
             </NSpin>
           </div>
           <NAlert
-            v-if="redaction.renderedPage && redaction.renderedPage.words.length === 0"
+            v-if="redaction.renderedPage && !redaction.hasSelectableText"
             type="info"
             class="no-text-alert"
           >
             {{ t("redaction.noSelectableText") }}
           </NAlert>
-          <NText depth="3" class="selection-hint">{{ t("redaction.selectionHint") }}</NText>
+          <NText depth="3" class="selection-hint">{{
+            isZoneMode ? t("redaction.zoneHint") : t("redaction.selectionHint")
+          }}</NText>
         </template>
 
         <NEmpty v-else class="empty-workspace" :description="t('redaction.emptySource')">
@@ -311,6 +484,10 @@ h1 {
   margin: 0 0 0.25rem;
 }
 
+.selection-mode {
+  margin: 0;
+}
+
 .page-number {
   width: 4.5rem;
 }
@@ -331,6 +508,64 @@ h1 {
   height: auto;
   user-select: none;
   width: 100%;
+}
+
+.zone-drawing-layer {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  touch-action: none;
+}
+
+.zone-drawing-layer.interactive {
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
+.zone-preview {
+  background: #000;
+  border: 2px solid #f59e0b;
+  box-sizing: border-box;
+  cursor: move;
+  position: absolute;
+}
+
+.zone-draft {
+  pointer-events: none;
+}
+
+.zone-handle {
+  background: #f59e0b;
+  border: 1px solid #78350f;
+  border-radius: 50%;
+  box-sizing: border-box;
+  cursor: nwse-resize;
+  height: 0.75rem;
+  padding: 0;
+  position: absolute;
+  width: 0.75rem;
+}
+
+.zone-handle.top-left {
+  left: -0.45rem;
+  top: -0.45rem;
+}
+
+.zone-handle.top-right {
+  cursor: nesw-resize;
+  right: -0.45rem;
+  top: -0.45rem;
+}
+
+.zone-handle.bottom-left {
+  bottom: -0.45rem;
+  cursor: nesw-resize;
+  left: -0.45rem;
+}
+
+.zone-handle.bottom-right {
+  bottom: -0.45rem;
+  right: -0.45rem;
 }
 
 .word-hitbox {

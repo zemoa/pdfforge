@@ -6,7 +6,7 @@ export default {
     heading: "PDFForge",
     language: "Langue",
     merge: "Fusionner des PDF",
-    redact: "Masquer du texte dans un PDF",
+    redact: "Masquer des informations dans un PDF",
     split: "Scinder un PDF",
   },
   merge: {
@@ -101,16 +101,17 @@ export default {
   redaction: {
     addSource: "Ajouter un PDF",
     clearSelections: "Effacer toutes les sélections",
+    drawZoneMode: "Dessiner une zone",
     dropHint: "Vous pouvez aussi déposer un unique PDF dans cette fenêtre.",
-    emptySelections: "Sélectionnez des mots sur une page pour préparer leur masquage.",
-    emptySource: "Ajoutez un PDF pour préparer un masquage de texte.",
-    error: "La préparation du masquage de texte a échoué",
-    heading: "Masquer du texte dans un PDF",
+    emptySelections: "Sélectionnez des mots ou dessinez des zones pour préparer leur masquage.",
+    emptySource: "Ajoutez un PDF pour préparer un masquage.",
+    error: "La préparation du masquage a échoué",
+    heading: "Masquer des informations dans un PDF",
     intro:
-      "Sélectionnez les mots à masquer définitivement lors d’une étape ultérieure. Votre PDF reste sur cet ordinateur.",
+      "Sélectionnez les mots ou les zones à masquer définitivement lors d’une étape ultérieure. Votre PDF reste sur cet ordinateur.",
     nextPage: "Suivante",
     noSelectableText:
-      "Cette page ne contient pas de texte sélectionnable. Le dessin d’un rectangle sera disponible à l’étape de masquage par zone.",
+      "Cette page ne contient pas de texte sélectionnable. Dessinez des rectangles sur les zones à masquer.",
     ofPages: "sur {count}",
     pageCount: "{count} pages",
     pagePreview: "Aperçu de la page {page}",
@@ -118,12 +119,18 @@ export default {
     remove: "Retirer",
     removeSource: "Retirer ce PDF",
     replaceSource: "Choisir un autre PDF",
+    resizeZone: "Redimensionner la zone de masquage",
     selectWord: "Sélectionner le mot {word}",
     selection: "Page {page} : {word}",
     selectionHint:
       "Cliquez sur un mot pour le sélectionner. Faites glisser la souris d’un mot à un autre pour sélectionner le texte intermédiaire.",
+    selectionMode: "Mode de sélection",
+    selectTextMode: "Sélectionner le texte",
     selections: "Sélections ({count})",
     source: "PDF source",
-    viewer: "Aperçu de la sélection de texte",
+    viewer: "Aperçu du masquage",
+    zoneHint:
+      "Faites glisser la souris sur la page pour dessiner une zone. Faites glisser une zone pour la déplacer ou utilisez ses poignées pour la redimensionner.",
+    zoneSelection: "Page {page} : zone {zone}",
   },
 } as const;

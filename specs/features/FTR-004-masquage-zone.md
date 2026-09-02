@@ -2,9 +2,9 @@
 
 ## Intention
 
-Permettre à l'utilisateur de dessiner une ou plusieurs zones à masquer lorsque
-le texte d'un PDF ne peut pas être sélectionné, puis de les ajuster avant la
-création du PDF.
+Permettre à l'utilisateur de dessiner une ou plusieurs zones à masquer, y
+compris sur une page dont le texte est sélectionnable afin de couvrir les
+images et icônes, puis de les ajuster avant la création du PDF.
 
 ## Exigences SFG couvertes
 

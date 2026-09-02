@@ -6,7 +6,21 @@ import {
   type RedactionPage,
   type RedactionSource,
 } from "../../application/redactionClient";
-import { addWordRange, removeWord, toggleWord, type SelectionsByPage } from "./selection";
+import {
+  addWordRange,
+  addZone,
+  clearZones,
+  moveZone,
+  removeWord,
+  removeZone,
+  resizeZone,
+  toggleWord,
+  type NormalizedPoint,
+  type NormalizedRect,
+  type SelectionsByPage,
+  type ZoneResizeHandle,
+  type ZonesByPage,
+} from "./selection";
 
 const MIN_ZOOM = 0.75;
 const MAX_ZOOM = 2;
@@ -17,28 +31,42 @@ export const useRedactionStore = defineStore("redaction", () => {
   const renderedPage = ref<RedactionPage | null>(null);
   const zoom = ref(1);
   const selections = ref<SelectionsByPage>({});
+  const zones = ref<ZonesByPage>({});
   const loadingPage = ref(false);
   const errorMessage = ref<string | null>(null);
   let requestedPage = 0;
+  let nextZoneId = 1;
   let unlistenDrop: (() => void) | undefined;
 
   const currentPage = computed(() => renderedPage.value?.page ?? 1);
   const selectedWordIndexes = computed(
     () => new Set(Object.keys(selections.value[currentPage.value] ?? {}).map(Number)),
   );
-  const selectionCount = computed(() =>
-    Object.values(selections.value).reduce((count, words) => count + Object.keys(words).length, 0),
+  const zonesOnCurrentPage = computed(() => zones.value[currentPage.value] ?? []);
+  const hasSelectableText = computed(
+    () => !!renderedPage.value && renderedPage.value.words.length > 0,
   );
-  const selectionSummary = computed(() =>
-    Object.entries(selections.value)
-      .map(([page, words]) => ({
-        page: Number(page),
-        words: Object.entries(words)
+  const canDrawZones = computed(() => !!renderedPage.value);
+  const selectionCount = computed(
+    () =>
+      Object.values(selections.value).reduce(
+        (count, words) => count + Object.keys(words).length,
+        0,
+      ) + Object.values(zones.value).reduce((count, pageZones) => count + pageZones.length, 0),
+  );
+  const selectionSummary = computed(() => {
+    const pages = new Set([...Object.keys(selections.value), ...Object.keys(zones.value)]);
+    return [...pages]
+      .map(Number)
+      .sort((left, right) => left - right)
+      .map((page) => ({
+        page,
+        words: Object.entries(selections.value[page] ?? {})
           .map(([index, text]) => ({ index: Number(index), text }))
           .sort((left, right) => left.index - right.index),
-      }))
-      .sort((left, right) => left.page - right.page),
-  );
+        zones: zones.value[page] ?? [],
+      }));
+  });
   const canGoPrevious = computed(() => currentPage.value > 1);
   const canGoNext = computed(() => !!source.value && currentPage.value < source.value.pageCount);
 
@@ -56,6 +84,8 @@ export const useRedactionStore = defineStore("redaction", () => {
       source.value = nextSource;
       renderedPage.value = null;
       selections.value = {};
+      zones.value = {};
+      nextZoneId = 1;
       zoom.value = 1;
       await loadPage(1);
     } catch (error) {
@@ -129,8 +159,36 @@ export const useRedactionStore = defineStore("redaction", () => {
     selections.value = removeWord(selections.value, page, wordIndex);
   }
 
+  function addZoneSelection(start: NormalizedPoint, end: NormalizedPoint) {
+    if (!canDrawZones.value) return;
+    zones.value = addZone(zones.value, currentPage.value, nextZoneId, start, end);
+    if (zones.value[currentPage.value]?.some((zone) => zone.id === nextZoneId)) nextZoneId += 1;
+  }
+
+  function moveZoneSelection(id: number, original: NormalizedRect, offset: NormalizedPoint) {
+    zones.value = moveZone(zones.value, currentPage.value, id, original, offset);
+  }
+
+  function resizeZoneSelection(
+    id: number,
+    original: NormalizedRect,
+    handle: ZoneResizeHandle,
+    point: NormalizedPoint,
+  ) {
+    zones.value = resizeZone(zones.value, currentPage.value, id, original, handle, point);
+  }
+
+  function removeZoneSelection(page: number, id: number) {
+    zones.value = removeZone(zones.value, page, id);
+  }
+
+  function clearZoneSelections() {
+    zones.value = clearZones(zones.value);
+  }
+
   function clearSelections() {
     selections.value = {};
+    clearZoneSelections();
   }
 
   function resetPreparation() {
@@ -138,6 +196,8 @@ export const useRedactionStore = defineStore("redaction", () => {
     source.value = null;
     renderedPage.value = null;
     selections.value = {};
+    zones.value = {};
+    nextZoneId = 1;
     zoom.value = 1;
     loadingPage.value = false;
     errorMessage.value = null;
@@ -156,6 +216,9 @@ export const useRedactionStore = defineStore("redaction", () => {
     errorMessage,
     currentPage,
     selectedWordIndexes,
+    zonesOnCurrentPage,
+    hasSelectableText,
+    canDrawZones,
     selectionCount,
     selectionSummary,
     canGoPrevious,
@@ -172,6 +235,11 @@ export const useRedactionStore = defineStore("redaction", () => {
     toggleTextWord,
     selectTextWordRange,
     removeTextWord,
+    addZoneSelection,
+    moveZoneSelection,
+    resizeZoneSelection,
+    removeZoneSelection,
+    clearZoneSelections,
     clearSelections,
     resetPreparation,
     dispose,

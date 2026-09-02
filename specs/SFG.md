@@ -41,7 +41,7 @@ scinder des fichiers PDF de manière simple et rapide.
 | F-19      | Dans le nouveau PDF obtenu après un masquage, les informations masquées ne doivent plus pouvoir être récupérées.                                                                                                          |
 | F-20      | Lorsqu'une scission produit plusieurs PDF, l'application doit ouvrir uniquement le dossier qui les contient.                                                                                                              |
 | F-21      | Pour le masquage, l'utilisateur doit pouvoir sélectionner un mot à la fois ou plusieurs mots en faisant glisser la souris.                                                                                                |
-| F-22      | Si le texte d'un PDF ne peut pas être sélectionné, l'utilisateur doit pouvoir dessiner un rectangle pour masquer définitivement une zone de la page.                                                                      |
+| F-22      | Que le texte d'un PDF soit sélectionnable ou non, l'utilisateur doit pouvoir dessiner un rectangle pour masquer définitivement une zone de la page, notamment une image ou une icône.                                     |
 | F-23      | Avant la création d'un nouveau PDF, l'application doit afficher un récapitulatif et demander la confirmation de l'utilisateur ; elle doit ensuite afficher un message simple de réussite ou d'échec.                      |
 | F-24      | L'application doit fonctionner sans connexion Internet.                                                                                                                                                                   |
 | F-25      | L'application doit permettre de traiter aussi bien de petits PDF que des documents de plusieurs centaines de pages.                                                                                                       |
@@ -131,8 +131,8 @@ leurs éléments interactifs.
 ### Masquer définitivement des informations
 
 L'utilisateur ajoute un PDF. Il sélectionne les mots à masquer un à un ou par
-glisser-déposer. Si le texte ne peut pas être sélectionné, il dessine un
-rectangle sur la zone à masquer. Il peut afficher la page en grand, zoomer et
+glisser-déposer. Que le texte soit sélectionnable ou non, il peut dessiner un
+rectangle sur une zone à masquer, notamment une image ou une icône. Il peut afficher la page en grand, zoomer et
 préparer plusieurs zones noires à masquer. Après confirmation, l'application crée un
 nouveau PDF sans les informations masquées, qui ne doivent pas pouvoir être
 récupérées. Avant confirmation, il peut vérifier, modifier ou retirer les

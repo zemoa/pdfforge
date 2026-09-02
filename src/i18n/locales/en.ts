@@ -6,7 +6,7 @@ export default {
     heading: "PDFForge",
     language: "Language",
     merge: "Merge PDF files",
-    redact: "Redact text in a PDF",
+    redact: "Redact a PDF",
     split: "Split a PDF",
   },
   merge: {
@@ -98,15 +98,16 @@ export default {
   redaction: {
     addSource: "Add a PDF",
     clearSelections: "Clear all selections",
+    drawZoneMode: "Draw zone",
     dropHint: "You can also drop one PDF file into this window.",
-    emptySelections: "Select words on a page to prepare their redaction.",
-    emptySource: "Add a PDF file to prepare text redaction.",
-    error: "Text redaction preparation failed",
-    heading: "Redact text in a PDF",
-    intro: "Select words to hide permanently in a later step. Your PDF stays on this computer.",
+    emptySelections: "Select words or draw zones to prepare their redaction.",
+    emptySource: "Add a PDF file to prepare redaction.",
+    error: "Redaction preparation failed",
+    heading: "Redact a PDF",
+    intro:
+      "Select words or zones to hide permanently in a later step. Your PDF stays on this computer.",
     nextPage: "Next",
-    noSelectableText:
-      "This page has no selectable text. Drawing a rectangle will be available in the zone-redaction step.",
+    noSelectableText: "This page has no selectable text. Draw rectangles over the areas to redact.",
     ofPages: "of {count}",
     pageCount: "{count} pages",
     pagePreview: "Preview of page {page}",
@@ -114,12 +115,18 @@ export default {
     remove: "Remove",
     removeSource: "Remove this PDF",
     replaceSource: "Choose another PDF",
+    resizeZone: "Resize redaction zone",
     selectWord: "Select word {word}",
     selection: "Page {page}: {word}",
     selectionHint:
       "Click one word to select it. Drag from one word to another to select the text between them.",
+    selectionMode: "Selection mode",
+    selectTextMode: "Select text",
     selections: "Selections ({count})",
     source: "Source PDF",
-    viewer: "Text selection preview",
+    viewer: "Redaction preview",
+    zoneHint:
+      "Drag on the page to draw a zone. Drag a zone to move it, or use its handles to resize it.",
+    zoneSelection: "Page {page}: zone {zone}",
   },
 } as const;
