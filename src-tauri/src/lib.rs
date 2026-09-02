@@ -4,6 +4,7 @@
 //! narrowly-scoped Tauri command adapters. See ARCHITECTURE.md before adding one.
 
 mod merge;
+mod pdfium;
 mod redaction;
 mod split;
 

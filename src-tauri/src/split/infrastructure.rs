@@ -13,6 +13,8 @@ use image::ImageFormat;
 use lopdf::Document;
 use pdfium_render::prelude::*;
 
+use crate::pdfium::load_or_reuse;
+
 use super::{
     application::{
         OutputReservation, PdfSplitEngine, SourceInspector, Thumbnail, ThumbnailRenderer,
@@ -77,11 +79,7 @@ impl PdfiumService {
             .lock()
             .map_err(|_| "The bundled PDF renderer is unavailable.".to_owned())?;
         if instance.is_none() {
-            *instance = Some(
-                Pdfium::bind_to_library(&self.library_path)
-                    .map(Pdfium::new)
-                    .map_err(|error| format!("The bundled PDF renderer is unavailable: {error}"))?,
-            );
+            *instance = Some(load_or_reuse(&self.library_path)?);
         }
         operation(instance.as_ref().expect("PDFium is initialized above"))
     }

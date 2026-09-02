@@ -87,8 +87,10 @@ libraries is the replaceable local implementation for thumbnails and page copy.
 The Linux library and notices are AppImage resources; the Windows portable ZIP
 ships the matching DLL beside `PDFForge.exe`. Neither target needs a system
 library or network connection at runtime. PDFium access is serialized inside the
-infrastructure adapter. Successful output opening remains a backend opener
-action; the renderer receives no path-opening or filesystem permission.
+infrastructure adapter. Its process-wide library bindings are initialized once
+and then reused by both the split and redaction adapters. Successful output
+opening remains a backend opener action; the renderer receives no path-opening
+or filesystem permission.
 
 ### PDF redaction preparation and definitive output (2026-09-02)
 
