@@ -1,5 +1,14 @@
 export default {
-  common: { english: "Anglais", french: "Français", home: "Accueil", theme: "Thème" },
+  common: {
+    collapsePanel: "Réduire le panneau",
+    english: "Anglais",
+    expandPanel: "Afficher le panneau",
+    french: "Français",
+    home: "Accueil",
+    navigation: "Navigation principale",
+    theme: "Thème",
+    tools: { merge: "Fusionner", redact: "Masquer", split: "Scinder" },
+  },
   appearance: { dark: "Sombre", light: "Clair", system: "Système" },
   window: { close: "Fermer", maximize: "Agrandir ou restaurer", minimize: "Réduire" },
   welcome: {
@@ -23,6 +32,7 @@ export default {
     cancelPreparation: "Annuler la préparation",
     closeWhileRunning: "Une fusion est en cours. L’annuler et fermer PDFForge ?",
     confirm: "Confirmer la fusion",
+    count: "{count} PDF",
     destination: "Document obtenu",
     destinationPath: "Dossier de destination",
     destinationPlaceholder: "Collez le chemin d’un dossier existant",

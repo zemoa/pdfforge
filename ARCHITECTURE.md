@@ -65,6 +65,16 @@ The main-window capability grants only the corresponding four window actions.
 Closing still emits the existing close-request event, so an active PDF operation
 can prevent the window from closing.
 
+### Unified tool workspace shell (2026-09-05)
+
+Every PDF tool page except the welcome page is composed inside the reusable Vue
+`ToolWorkspaceShell`. It owns only the common presentation frame: the compact
+tool rail, context bar, collapsible source and details panels, and optional
+bottom action bar. Tool pages keep their domain-store intentions, their
+operation-specific controls, and all business state. This makes the available
+document workspace predictable and maximizes the central working area without
+introducing a cross-domain frontend store or a new backend boundary.
+
 ### PDF merge domain (2026-09-01)
 
 FTR-001 introduces the `merge` Rust business domain with domain, application,

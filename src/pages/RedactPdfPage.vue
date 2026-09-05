@@ -6,9 +6,6 @@ import {
   NEmpty,
   NInput,
   NInputNumber,
-  NLayout,
-  NLayoutContent,
-  NLayoutSider,
   NList,
   NListItem,
   NModal,
@@ -20,8 +17,8 @@ import {
 } from "naive-ui";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
+import ToolWorkspaceShell from "../components/ToolWorkspaceShell.vue";
 import {
   rectangleFromPoints,
   type NormalizedPoint,
@@ -32,7 +29,6 @@ import {
 import { useRedactionStore } from "../stores/redaction/useRedactionStore";
 
 const { t } = useI18n();
-const router = useRouter();
 const redaction = useRedactionStore();
 const dragAnchor = ref<number | null>(null);
 const dragEnd = ref<number | null>(null);
@@ -190,17 +186,14 @@ function finishZoneGesture(event: PointerEvent) {
 </script>
 
 <template>
-  <NLayout has-sider class="application-shell">
-    <NLayoutSider
-      v-model:collapsed="selectionsSidebarCollapsed"
-      bordered
-      collapse-mode="width"
-      :collapsed-width="48"
-      :width="296"
-      show-trigger
-      class="selections-sidebar"
-    >
-      <aside class="sidebar-content">
+  <ToolWorkspaceShell
+    v-model:right-panel-collapsed="selectionsSidebarCollapsed"
+    active-tool="redact"
+    :navigation-disabled="redaction.phase === 'running'"
+    :title="t('redaction.heading')"
+  >
+    <template #right-panel>
+      <section class="panel-section">
         <NCard
           size="small"
           embedded
@@ -254,17 +247,12 @@ function finishZoneGesture(event: PointerEvent) {
             {{ t("redaction.clearSelections") }}
           </NButton>
         </NCard>
-      </aside>
-    </NLayoutSider>
+      </section>
+    </template>
 
-    <NLayoutContent class="workspace-content">
+    <section class="redaction-workspace">
       <main class="workspace">
-        <header class="workspace-heading">
-          <div>
-            <h1>{{ t("redaction.heading") }}</h1>
-            <NText depth="3">{{ t("redaction.intro") }}</NText>
-          </div>
-        </header>
+        <NText depth="3" class="workspace-intro">{{ t("redaction.intro") }}</NText>
 
         <NAlert
           v-if="redaction.errorMessage"
@@ -412,14 +400,10 @@ function finishZoneGesture(event: PointerEvent) {
           </template>
         </NEmpty>
       </main>
-    </NLayoutContent>
+    </section>
 
-    <NLayoutSider bordered :width="280" class="details-sidebar">
-      <aside class="sidebar-content">
-        <NButton block :disabled="redaction.phase === 'running'" @click="router.push('/')">{{
-          t("common.home")
-        }}</NButton>
-
+    <template #left-panel>
+      <section class="panel-section">
         <NCard size="small" embedded :title="t('redaction.source')">
           <template v-if="redaction.source">
             <NThing :title="redaction.source.name" :description="redaction.source.path">
@@ -527,18 +511,22 @@ function finishZoneGesture(event: PointerEvent) {
               >{{ t("redaction.browse") }}</NButton
             >
           </NCard>
-          <NButton
-            block
-            type="primary"
-            :disabled="!redaction.canRequestSummary"
-            @click="openSummary"
-          >
-            {{ t("redaction.review") }}
-          </NButton>
         </template>
-      </aside>
-    </NLayoutSider>
-  </NLayout>
+      </section>
+    </template>
+
+    <template #footer>
+      <NButton
+        block
+        type="primary"
+        size="large"
+        :disabled="redaction.phase === 'running' || !redaction.canRequestSummary"
+        @click="openSummary"
+      >
+        {{ t("redaction.review") }}
+      </NButton>
+    </template>
+  </ToolWorkspaceShell>
 
   <NModal
     v-model:show="showSummary"
@@ -579,21 +567,9 @@ function finishZoneGesture(event: PointerEvent) {
 </template>
 
 <style scoped>
-.application-shell {
-  height: 100vh;
-}
-
-.workspace-content {
-  min-width: 0;
-  order: 2;
-}
-
-.details-sidebar {
-  order: 1;
-}
-
-.selections-sidebar {
-  order: 3;
+.redaction-workspace {
+  height: 100%;
+  min-height: 0;
 }
 
 .workspace {
@@ -603,19 +579,18 @@ function finishZoneGesture(event: PointerEvent) {
   gap: 0.75rem;
   height: 100%;
   min-height: 0;
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
-.sidebar-content {
+.panel-section {
+  align-content: start;
   display: grid;
-  gap: 1rem;
-  height: 100%;
-  overflow: auto;
-  padding: 1rem;
+  gap: 0.75rem;
 }
 
-h1 {
-  margin: 0;
+.workspace-intro {
+  display: block;
+  line-height: 1.5;
 }
 
 .selection-hint {

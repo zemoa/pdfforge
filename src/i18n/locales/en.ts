@@ -1,5 +1,14 @@
 export default {
-  common: { english: "English", french: "French", home: "Home", theme: "Theme" },
+  common: {
+    collapsePanel: "Collapse panel",
+    english: "English",
+    expandPanel: "Expand panel",
+    french: "French",
+    home: "Home",
+    navigation: "Primary navigation",
+    theme: "Theme",
+    tools: { merge: "Merge", redact: "Redact", split: "Split" },
+  },
   appearance: { dark: "Dark", light: "Light", system: "System" },
   window: { close: "Close", maximize: "Maximize or restore", minimize: "Minimize" },
   welcome: {
@@ -23,6 +32,7 @@ export default {
     cancelPreparation: "Cancel preparation",
     closeWhileRunning: "A merge is in progress. Cancel it and close PDFForge?",
     confirm: "Confirm merge",
+    count: "{count} PDF files",
     destination: "Output",
     destinationPath: "Destination folder",
     destinationPlaceholder: "Paste an existing folder path",

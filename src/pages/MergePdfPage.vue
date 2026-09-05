@@ -6,8 +6,6 @@ import {
   NCard,
   NEmpty,
   NInput,
-  NLayout,
-  NLayoutContent,
   NList,
   NListItem,
   NModal,
@@ -19,12 +17,11 @@ import {
 } from "naive-ui";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
+import ToolWorkspaceShell from "../components/ToolWorkspaceShell.vue";
 import { useMergeStore } from "../stores/merge/useMergeStore";
 
 const { t } = useI18n();
-const router = useRouter();
 const merge = useMergeStore();
 const showSummary = ref(false);
 const dragIndex = ref<number | null>(null);
@@ -47,116 +44,116 @@ function dropSource(index: number) {
 </script>
 
 <template>
-  <NLayout class="application-shell">
-    <NLayoutContent content-style="padding: 2rem;">
-      <main class="merge-page">
-        <header class="page-heading">
-          <div>
-            <h1>{{ t("merge.heading") }}</h1>
-            <NText depth="3">{{ t("merge.intro") }}</NText>
-          </div>
-          <NButton quaternary @click="router.push('/')">{{ t("common.home") }}</NButton>
-        </header>
+  <ToolWorkspaceShell active-tool="merge" :title="t('merge.heading')">
+    <template #left-panel>
+      <section class="panel-section">
+        <NText strong>{{ t("merge.sources") }}</NText>
+        <NText depth="3" class="drop-hint">{{ t("merge.dropHint") }}</NText>
+        <NButton type="primary" block @click="merge.choosePdfFiles">{{
+          t("merge.addFiles")
+        }}</NButton>
+        <NButton block @click="merge.chooseSourceFolder">{{ t("merge.addFolder") }}</NButton>
+      </section>
+    </template>
 
-        <NCard v-if="merge.phase === 'running'" embedded>
-          <NThing :title="t('merge.processing')">
-            <NText depth="3">{{ t("merge.progress", merge.progress) }}</NText>
-          </NThing>
-          <NProgress :percentage="merge.progress.percent" indicator-placement="inside" processing />
-          <NButton type="error" @click="merge.cancelMerge">{{ t("merge.cancel") }}</NButton>
-        </NCard>
+    <template #right-panel>
+      <section class="panel-section">
+        <NText strong>{{ t("merge.destination") }}</NText>
+        <label
+          >{{ t("merge.outputName")
+          }}<NInput
+            :value="merge.outputName"
+            :placeholder="t('merge.outputPlaceholder')"
+            @update:value="merge.renameOutput"
+        /></label>
+        <label
+          >{{ t("merge.destinationPath")
+          }}<NInput
+            :value="merge.destination"
+            :placeholder="t('merge.destinationPlaceholder')"
+            @update:value="merge.chooseDestination"
+        /></label>
+        <NButton @click="merge.chooseDestinationFolder">{{ t("merge.browse") }}</NButton>
+      </section>
+    </template>
 
-        <template v-else>
-          <NAlert v-if="merge.errorMessage" type="error" :title="t('merge.error')">
-            {{ merge.errorMessage }}
-          </NAlert>
-          <NAlert v-if="merge.ignoredNonPdfs.length" type="warning" :title="t('merge.ignored')">
-            {{ merge.ignoredNonPdfs.join(", ") }}
-          </NAlert>
+    <section class="merge-workspace">
+      <NCard v-if="merge.phase === 'running'" embedded class="process-card">
+        <NThing :title="t('merge.processing')">
+          <NText depth="3">{{ t("merge.progress", merge.progress) }}</NText>
+        </NThing>
+        <NProgress :percentage="merge.progress.percent" indicator-placement="inside" processing />
+        <NButton type="error" @click="merge.cancelMerge">{{ t("merge.cancel") }}</NButton>
+      </NCard>
 
-          <NCard embedded :title="t('merge.sources')">
-            <NSpace>
-              <NButton type="primary" @click="merge.choosePdfFiles">{{
-                t("merge.addFiles")
-              }}</NButton>
-              <NButton @click="merge.chooseSourceFolder">{{ t("merge.addFolder") }}</NButton>
-            </NSpace>
-            <NText depth="3" class="drop-hint">{{ t("merge.dropHint") }}</NText>
-            <NEmpty v-if="!merge.sources.length" :description="t('merge.emptySources')" />
-            <NList v-else bordered>
-              <NListItem
-                v-for="(source, index) in merge.sources"
-                :key="`${source.path}-${index}`"
-                draggable="true"
-                @dragstart="dragIndex = index"
-                @dragover.prevent
-                @drop="dropSource(index)"
-              >
-                <NTooltip trigger="hover"
-                  ><template #trigger
-                    ><strong>{{ source.name }}</strong></template
-                  >{{ source.path }}</NTooltip
-                >
-                <template #suffix>
-                  <NButtonGroup class="row-actions">
-                    <NButton
-                      quaternary
-                      size="small"
-                      :disabled="index === 0"
-                      @click="merge.moveSource(index, -1)"
-                      >↑</NButton
-                    >
-                    <NButton
-                      quaternary
-                      size="small"
-                      :disabled="index === merge.sources.length - 1"
-                      @click="merge.moveSource(index, 1)"
-                      >↓</NButton
-                    >
-                    <NButton
-                      quaternary
-                      type="error"
-                      size="small"
-                      @click="merge.removeSource(index)"
-                      >{{ t("merge.remove") }}</NButton
-                    >
-                  </NButtonGroup>
-                </template>
-              </NListItem>
-            </NList>
-          </NCard>
+      <template v-else>
+        <NAlert v-if="merge.errorMessage" type="error" :title="t('merge.error')">{{
+          merge.errorMessage
+        }}</NAlert>
+        <NAlert v-if="merge.ignoredNonPdfs.length" type="warning" :title="t('merge.ignored')">{{
+          merge.ignoredNonPdfs.join(", ")
+        }}</NAlert>
 
-          <NCard embedded :title="t('merge.destination')">
-            <label
-              >{{ t("merge.outputName")
-              }}<NInput
-                :value="merge.outputName"
-                :placeholder="t('merge.outputPlaceholder')"
-                @update:value="merge.renameOutput"
-            /></label>
-            <label
-              >{{ t("merge.destinationPath")
-              }}<NInput
-                :value="merge.destination"
-                :placeholder="t('merge.destinationPlaceholder')"
-                @update:value="merge.chooseDestination"
-            /></label>
-            <NButton @click="merge.chooseDestinationFolder">{{ t("merge.browse") }}</NButton>
-          </NCard>
-
-          <NButton
-            block
-            type="primary"
-            size="large"
-            :disabled="!merge.canRequestSummary"
-            @click="openSummary"
+        <div class="workspace-caption">
+          <NText depth="3">{{ t("merge.intro") }}</NText>
+          <NText depth="3">{{ t("merge.count", { count: merge.sources.length }) }}</NText>
+        </div>
+        <NEmpty
+          v-if="!merge.sources.length"
+          class="workspace-empty"
+          :description="t('merge.emptySources')"
+        />
+        <NList v-else bordered class="source-list">
+          <NListItem
+            v-for="(source, index) in merge.sources"
+            :key="`${source.path}-${index}`"
+            draggable="true"
+            @dragstart="dragIndex = index"
+            @dragover.prevent
+            @drop="dropSource(index)"
           >
-            {{ t("merge.review") }}
-          </NButton>
-        </template>
-      </main>
-    </NLayoutContent>
-  </NLayout>
+            <NTooltip trigger="hover"
+              ><template #trigger
+                ><strong>{{ source.name }}</strong></template
+              >{{ source.path }}</NTooltip
+            >
+            <template #suffix>
+              <NButtonGroup class="row-actions">
+                <NButton
+                  quaternary
+                  size="small"
+                  :disabled="index === 0"
+                  @click="merge.moveSource(index, -1)"
+                  >↑</NButton
+                >
+                <NButton
+                  quaternary
+                  size="small"
+                  :disabled="index === merge.sources.length - 1"
+                  @click="merge.moveSource(index, 1)"
+                  >↓</NButton
+                >
+                <NButton quaternary type="error" size="small" @click="merge.removeSource(index)">{{
+                  t("merge.remove")
+                }}</NButton>
+              </NButtonGroup>
+            </template>
+          </NListItem>
+        </NList>
+      </template>
+    </section>
+
+    <template #footer>
+      <NButton
+        block
+        type="primary"
+        size="large"
+        :disabled="merge.phase === 'running' || !merge.canRequestSummary"
+        @click="openSummary"
+        >{{ t("merge.review") }}</NButton
+      >
+    </template>
+  </ToolWorkspaceShell>
 
   <NModal
     :show="showIncidents"
@@ -215,32 +212,45 @@ function dropSource(index: number) {
 </template>
 
 <style scoped>
-.application-shell {
-  min-height: 100vh;
-}
-.merge-page {
-  display: grid;
-  gap: 1rem;
-  margin: 0 auto;
-  max-width: 52rem;
-}
-h1 {
-  margin: 0;
-}
-.page-heading {
-  align-items: start;
+.merge-workspace {
+  box-sizing: border-box;
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  justify-content: space-between;
+  height: 100%;
+  min-height: 0;
+  padding: 1.25rem;
 }
+
+.panel-section {
+  align-content: start;
+  display: grid;
+  gap: 0.75rem;
+}
+
 label {
   display: grid;
   gap: 0.4rem;
-  margin-bottom: 0.8rem;
 }
 .drop-hint {
   display: block;
-  margin: 0.8rem 0;
+  line-height: 1.5;
+}
+
+.workspace-caption {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.workspace-empty {
+  display: grid;
+  flex: 1;
+  place-items: center;
+}
+
+.source-list {
+  overflow: auto;
 }
 
 :deep(.n-list-item) {
