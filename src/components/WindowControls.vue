@@ -7,7 +7,11 @@ import { windowClient } from "../application/windowClient";
 const { t } = useI18n();
 
 function startDragging(event: MouseEvent) {
-  if (event.button === 0) void windowClient.startDragging();
+  if (event.button === 0 && event.detail === 1) void windowClient.startDragging();
+}
+
+function toggleMaximize() {
+  void windowClient.toggleMaximize();
 }
 </script>
 
@@ -16,9 +20,9 @@ function startDragging(event: MouseEvent) {
     class="window-drag-region"
     aria-hidden="true"
     @mousedown="startDragging"
-    @dblclick="windowClient.toggleMaximize"
+    @dblclick="toggleMaximize"
   >
-    <div class="window-controls" aria-label="Window controls">
+    <div class="window-controls" aria-label="Window controls" @mousedown.stop @dblclick.stop>
       <NButton
         quaternary
         class="window-control"
@@ -32,7 +36,7 @@ function startDragging(event: MouseEvent) {
         quaternary
         class="window-control"
         :title="t('window.maximize')"
-        @click="windowClient.toggleMaximize"
+        @click="toggleMaximize"
       >
         <span aria-hidden="true">□</span>
         <span class="visually-hidden">{{ t("window.maximize") }}</span>
