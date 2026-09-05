@@ -81,9 +81,23 @@ function toggleMaximize() {
 }
 
 .window-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2.25rem;
   height: 1.75rem;
+  padding: 0;
   font-size: 1.125rem;
+  line-height: 1;
+}
+
+.window-control :deep(.n-button__content) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
 }
 
 .window-control--close {
