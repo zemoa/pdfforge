@@ -56,6 +56,15 @@ Vue uses Composition API and strict TypeScript. Naive UI is the only component l
 
 The default capability grants only `core:default`; no filesystem, shell, HTTP, opener, updater, clipboard or other plugin permission is pre-authorized. The CSP allows only local application assets and the Tauri IPC transport. Any new permission or CSP source is an architectural decision and must be documented here before implementation.
 
+### Frameless window controls (2026-09-02)
+
+The main window has no native decorations. A reusable Vue control strip provides
+dragging, minimizing, maximizing/restoring and closing through the typed
+frontend `windowClient`; components never import the Tauri window API directly.
+The main-window capability grants only the corresponding four window actions.
+Closing still emits the existing close-request event, so an active PDF operation
+can prevent the window from closing.
+
 ### PDF merge domain (2026-09-01)
 
 FTR-001 introduces the `merge` Rust business domain with domain, application,

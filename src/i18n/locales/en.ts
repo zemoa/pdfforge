@@ -1,6 +1,7 @@
 export default {
   common: { english: "English", french: "French", home: "Home", theme: "Theme" },
   appearance: { dark: "Dark", light: "Light", system: "System" },
+  window: { close: "Close", maximize: "Maximize or restore", minimize: "Minimize" },
   welcome: {
     body: "Choose a PDF tool. Every operation stays on your computer.",
     heading: "PDFForge",

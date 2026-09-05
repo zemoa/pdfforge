@@ -15,6 +15,7 @@
         "title": "PDFForge",
         "width": 1100,
         "height": 760,
+        "decorations": false,
         "minWidth": 960,
         "minHeight": 640
       }
