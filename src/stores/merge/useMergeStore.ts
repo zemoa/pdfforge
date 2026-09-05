@@ -72,37 +72,43 @@ export const useMergeStore = defineStore("merge", () => {
   }
 
   async function choosePdfFiles() {
+    if (phase.value === "running") return;
     await addSelectedPaths(await mergeClient.pickPdfFiles());
   }
 
   async function chooseSourceFolder() {
+    if (phase.value === "running") return;
     const path = await mergeClient.pickFolder();
     if (path) await addSelectedPaths([path]);
   }
 
   async function chooseDestinationFolder() {
+    if (phase.value === "running") return;
     const path = await mergeClient.pickFolder();
     if (path) chooseDestination(path);
   }
 
   function ignoreInvalidSources() {
-    if (!pendingInspection.value) return;
+    if (phase.value === "running" || !pendingInspection.value) return;
     sources.value.push(...pendingInspection.value.accepted);
     pendingInspection.value = null;
     outputPreview.value = null;
   }
 
   function cancelPreparation() {
+    if (phase.value === "running") return;
     resetPreparation();
     pendingInspection.value = null;
   }
 
   function removeSource(index: number) {
+    if (phase.value === "running") return;
     sources.value.splice(index, 1);
     outputPreview.value = null;
   }
 
   function moveSource(index: number, direction: -1 | 1) {
+    if (phase.value === "running") return;
     const target = index + direction;
     if (target < 0 || target >= sources.value.length) return;
     const [source] = sources.value.splice(index, 1);
@@ -111,6 +117,7 @@ export const useMergeStore = defineStore("merge", () => {
   }
 
   function reorderSource(from: number, to: number) {
+    if (phase.value === "running") return;
     if (from === to || to < 0 || to >= sources.value.length) return;
     const [source] = sources.value.splice(from, 1);
     sources.value.splice(to, 0, source);
@@ -118,11 +125,13 @@ export const useMergeStore = defineStore("merge", () => {
   }
 
   function renameOutput(name: string) {
+    if (phase.value === "running") return;
     outputName.value = name;
     outputPreview.value = null;
   }
 
   function chooseDestination(path: string) {
+    if (phase.value === "running") return;
     destination.value = path;
     outputPreview.value = null;
   }

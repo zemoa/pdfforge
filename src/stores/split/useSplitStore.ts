@@ -106,17 +106,25 @@ export const useSplitStore = defineStore("split", () => {
   }
 
   async function choosePdfFile() {
+    if (phase.value === "running") return;
     const path = await splitClient.pickPdfFile();
     if (path) await addSelectedPaths([path]);
   }
 
   async function chooseDestinationFolder() {
+    if (phase.value === "running") return;
     const path = await splitClient.pickFolder();
     if (path) chooseDestination(path);
   }
 
   async function loadNextThumbnails() {
-    if (!source.value || thumbnailsLoading.value || !canLoadMoreThumbnails.value) return;
+    if (
+      phase.value === "running" ||
+      !source.value ||
+      thumbnailsLoading.value ||
+      !canLoadMoreThumbnails.value
+    )
+      return;
     thumbnailsLoading.value = true;
     const firstPage = loadedPageCount.value + 1;
     const lastPage = Math.min(source.value.pageCount, firstPage + THUMBNAIL_BATCH_SIZE - 1);
@@ -138,6 +146,7 @@ export const useSplitStore = defineStore("split", () => {
   }
 
   function chooseMode(nextMode: SplitMode) {
+    if (phase.value === "running") return;
     if (mode.value !== nextMode) {
       selectedPages.value = [];
       groups.value = [];
@@ -148,7 +157,12 @@ export const useSplitStore = defineStore("split", () => {
   }
 
   function togglePage(page: number) {
-    if (mode.value === "eachPage" || assignedPages.value.includes(page)) return;
+    if (
+      phase.value === "running" ||
+      mode.value === "eachPage" ||
+      assignedPages.value.includes(page)
+    )
+      return;
     if (selectedPages.value.includes(page)) {
       selectedPages.value = selectedPages.value.filter((candidate) => candidate !== page);
     } else {
@@ -158,12 +172,13 @@ export const useSplitStore = defineStore("split", () => {
   }
 
   function clearSelectedPages() {
+    if (phase.value === "running") return;
     selectedPages.value = [];
     outputPreview.value = null;
   }
 
   function createGroupFromSelection() {
-    if (selectedPages.value.length === 0) return;
+    if (phase.value === "running" || selectedPages.value.length === 0) return;
     groups.value.push({ id: nextGroupId, pages: selectedPages.value });
     nextGroupId += 1;
     selectedPages.value = [];
@@ -171,16 +186,19 @@ export const useSplitStore = defineStore("split", () => {
   }
 
   function removeGroup(id: number) {
+    if (phase.value === "running") return;
     groups.value = groups.value.filter((group) => group.id !== id);
     outputPreview.value = null;
   }
 
   function renameOutput(name: string) {
+    if (phase.value === "running") return;
     outputName.value = name;
     outputPreview.value = null;
   }
 
   function chooseDestination(path: string) {
+    if (phase.value === "running") return;
     destination.value = path;
     outputPreview.value = null;
   }
@@ -225,6 +243,11 @@ export const useSplitStore = defineStore("split", () => {
 
   async function cancelSplit() {
     await splitClient.cancel();
+  }
+
+  function removeSource() {
+    if (phase.value === "running") return;
+    resetPreparation();
   }
 
   function resetPreparation() {
@@ -279,6 +302,7 @@ export const useSplitStore = defineStore("split", () => {
     clearSelectedPages,
     createGroupFromSelection,
     removeGroup,
+    removeSource,
     renameOutput,
     chooseDestination,
     requestSummary,

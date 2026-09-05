@@ -44,15 +44,25 @@ function dropSource(index: number) {
 </script>
 
 <template>
-  <ToolWorkspaceShell active-tool="merge" :title="t('merge.heading')">
+  <ToolWorkspaceShell
+    active-tool="merge"
+    :navigation-disabled="merge.phase === 'running'"
+    :title="t('merge.heading')"
+  >
     <template #left-panel>
       <section class="panel-section">
         <NText strong>{{ t("merge.sources") }}</NText>
         <NText depth="3" class="drop-hint">{{ t("merge.dropHint") }}</NText>
-        <NButton type="primary" block @click="merge.choosePdfFiles">{{
-          t("merge.addFiles")
+        <NButton
+          type="primary"
+          block
+          :disabled="merge.phase === 'running'"
+          @click="merge.choosePdfFiles"
+          >{{ t("merge.addFiles") }}</NButton
+        >
+        <NButton block :disabled="merge.phase === 'running'" @click="merge.chooseSourceFolder">{{
+          t("merge.addFolder")
         }}</NButton>
-        <NButton block @click="merge.chooseSourceFolder">{{ t("merge.addFolder") }}</NButton>
       </section>
     </template>
 
@@ -63,6 +73,7 @@ function dropSource(index: number) {
           >{{ t("merge.outputName")
           }}<NInput
             :value="merge.outputName"
+            :disabled="merge.phase === 'running'"
             :placeholder="t('merge.outputPlaceholder')"
             @update:value="merge.renameOutput"
         /></label>
@@ -70,10 +81,13 @@ function dropSource(index: number) {
           >{{ t("merge.destinationPath")
           }}<NInput
             :value="merge.destination"
+            :disabled="merge.phase === 'running'"
             :placeholder="t('merge.destinationPlaceholder')"
             @update:value="merge.chooseDestination"
         /></label>
-        <NButton @click="merge.chooseDestinationFolder">{{ t("merge.browse") }}</NButton>
+        <NButton :disabled="merge.phase === 'running'" @click="merge.chooseDestinationFolder">{{
+          t("merge.browse")
+        }}</NButton>
       </section>
     </template>
 

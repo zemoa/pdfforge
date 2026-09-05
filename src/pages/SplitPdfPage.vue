@@ -50,7 +50,11 @@ function selectMode(mode: string | number) {
 </script>
 
 <template>
-  <ToolWorkspaceShell active-tool="split" :title="t('split.heading')">
+  <ToolWorkspaceShell
+    active-tool="split"
+    :navigation-disabled="split.phase === 'running'"
+    :title="t('split.heading')"
+  >
     <template #left-panel>
       <section class="panel-section">
         <NText strong>{{ t("split.source") }}</NText>
@@ -58,16 +62,26 @@ function selectMode(mode: string | number) {
           <NThing :title="split.source.name" :description="split.source.path">
             <NText depth="3">{{ t("split.pageCount", { count: split.source.pageCount }) }}</NText>
           </NThing>
-          <NButton block @click="split.choosePdfFile">{{ t("split.replaceSource") }}</NButton>
-          <NButton block type="error" @click="split.resetPreparation">{{
-            t("split.removeSource")
+          <NButton block :disabled="split.phase === 'running'" @click="split.choosePdfFile">{{
+            t("split.replaceSource")
           }}</NButton>
+          <NButton
+            block
+            type="error"
+            :disabled="split.phase === 'running'"
+            @click="split.removeSource"
+            >{{ t("split.removeSource") }}</NButton
+          >
         </template>
         <template v-else>
           <NText depth="3" class="drop-hint">{{ t("split.dropHint") }}</NText>
-          <NButton type="primary" block @click="split.choosePdfFile">{{
-            t("split.addSource")
-          }}</NButton>
+          <NButton
+            type="primary"
+            block
+            :disabled="split.phase === 'running'"
+            @click="split.choosePdfFile"
+            >{{ t("split.addSource") }}</NButton
+          >
         </template>
       </section>
     </template>
@@ -79,6 +93,7 @@ function selectMode(mode: string | number) {
           >{{ t("split.outputName")
           }}<NInput
             :value="split.outputName"
+            :disabled="split.phase === 'running'"
             :placeholder="t('split.outputPlaceholder')"
             @update:value="split.renameOutput"
         /></label>
@@ -86,10 +101,13 @@ function selectMode(mode: string | number) {
           >{{ t("split.destinationPath")
           }}<NInput
             :value="split.destination"
+            :disabled="split.phase === 'running'"
             :placeholder="t('split.destinationPlaceholder')"
             @update:value="split.chooseDestination"
         /></label>
-        <NButton @click="split.chooseDestinationFolder">{{ t("split.browse") }}</NButton>
+        <NButton :disabled="split.phase === 'running'" @click="split.chooseDestinationFolder">{{
+          t("split.browse")
+        }}</NButton>
       </section>
     </template>
 
