@@ -3,7 +3,7 @@
 ## Toolchain
 
 - Node.js 24+ and Corepack; pnpm `11.25.0` is selected by `package.json`.
-- Rust stable, installed with rustup.
+- Rust 1.98.1, installed with rustup (`rustup toolchain install 1.98.1`). CI pins this version; upgrade it deliberately in both workflows, then let CI create the corresponding Cargo cache.
 - GitHub Actions supplies the Windows build environment. A local Windows developer needs Microsoft C++ Build Tools with **Desktop development with C++** and WebView2.
 - Linux development needs the native packages required by Tauri. Ubuntu/Debian, Fedora and immutable Fedora/Bazzite instructions are below.
 
@@ -95,9 +95,10 @@ After pushing a version tag, find the distributable files in the repository’s
 Release assets with the newly built files.
 
 The CI and artifact workflows cache Cargo’s registry, Git dependencies and
-`src-tauri/target` independently for each operating system. A cache is reused
-while `src-tauri/Cargo.lock` is unchanged; the first build after changing Rust
-dependencies is expected to compile from scratch.
+`src-tauri/target` independently for each operating system, Rust compiler
+version and `src-tauri/Cargo.lock`. A cache is reused only when all three match;
+the first build after changing Rust dependencies or deliberately upgrading Rust
+is expected to compile from scratch.
 
 Optional Windows signing uses these GitHub Actions secrets:
 
