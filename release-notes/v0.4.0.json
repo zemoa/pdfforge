@@ -1,0 +1,5 @@
+{
+  "version": "0.4.0",
+  "fr": "- Présente Fusionner, Scinder et Masquer dans des espaces visuels distincts pour repérer plus facilement l’outil adapté.\n- Harmonise les couleurs de chaque espace entre l’écran d’accueil et l’espace de travail.",
+  "en": "- Presents Merge, Split, and Redact in distinct visual spaces to make the right tool easier to identify.\n- Keeps each tool’s colour treatment consistent between the welcome screen and workspace."
+}
