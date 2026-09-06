@@ -320,7 +320,7 @@ fn replace_with(
             &previous,
             updated_to,
             keep_rollback,
-        );
+        )
     }
     #[cfg(not(target_os = "windows"))]
     {
