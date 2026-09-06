@@ -157,7 +157,7 @@ installation, retry, or telemetry runs automatically.
 
 Direct JavaScript dependencies are exact versions in `package.json`; `pnpm-lock.yaml` is committed and authoritative. Rust resolves compatible current Tauri 2 crates into committed `Cargo.lock`. TypeScript is pinned to the latest version supported by `typescript-eslint` (currently 6.0.3), rather than an incompatible newer compiler. Upgrade deliberately, regenerate locks, run the full checks, and record a material architectural change here.
 
-ESLint, Prettier, strict TypeScript, Rust formatting and Clippy are mandatory. CI pins Rust 1.98.1 so its outputs are reproducible; its Cargo cache includes the installed compiler fingerprint as well as `Cargo.lock`, preventing reuse of artifacts compiled by a different Rust release. Tests are unit tests only and cover business/application behaviour in the Rust backend (and a frontend domain store only when it contains behaviour). There are no end-to-end tests in this project at this stage.
+ESLint, Prettier, strict TypeScript, Rust formatting and Clippy are mandatory. CI pins Rust 1.98.1 so its outputs are reproducible; its Cargo cache is keyed by the installed compiler fingerprint and `Cargo.lock`. On an exact-key miss, it restores the latest cache for the same operating system and compiler, then lets Cargo verify and rebuild only incompatible artifacts. No cache is shared across operating systems or Rust compiler releases. Tests are unit tests only and cover business/application behaviour in the Rust backend (and a frontend domain store only when it contains behaviour). There are no end-to-end tests in this project at this stage.
 
 ## Architectural decision record
 

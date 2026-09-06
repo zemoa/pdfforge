@@ -32,6 +32,8 @@ jobs:
             ~/.cargo/git
             src-tauri/target
           key: ${{ runner.os }}-cargo-${{ steps.rust-toolchain.outputs.cachekey }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ steps.rust-toolchain.outputs.cachekey }}-
       - run: >-
           sudo apt-get update && sudo apt-get install -y
           libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev
@@ -69,6 +71,8 @@ jobs:
             ~/.cargo/git
             src-tauri/target
           key: ${{ runner.os }}-cargo-${{ steps.rust-toolchain.outputs.cachekey }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ steps.rust-toolchain.outputs.cachekey }}-
       - shell: pwsh
         run: if (-not $env:UPDATE_ED25519_PUBLIC_KEY) { throw "UPDATE_ED25519_PUBLIC_KEY is required." }
       - run: pnpm install --frozen-lockfile

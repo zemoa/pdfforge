@@ -13,6 +13,7 @@ if (!versionPattern.test(version ?? "") || !["prepare", "publish"].includes(comm
 
 const paths = {
   cargo: resolve(root, "src-tauri/Cargo.toml"),
+  cargoLock: resolve(root, "src-tauri/Cargo.lock"),
   notes: resolve(root, `release-notes/v${version}.json`),
   package: resolve(root, "package.json"),
   tauri: resolve(root, "src-tauri/tauri.conf.json"),
@@ -21,6 +22,7 @@ const paths = {
 if (command === "prepare") {
   updateJsonVersion(paths.package, version);
   updateCargoVersion(paths.cargo, version);
+  updateCargoLockVersion(paths.cargoLock, version);
   updateJsonVersion(paths.tauri, version);
   if (!existsSync(paths.notes)) {
     writeJson(paths.notes, { version, fr: "", en: "" });
@@ -39,7 +41,8 @@ if (notes.version !== version || !nonEmptyString(notes.fr) || !nonEmptyString(no
 if (
   readJson(paths.package).version !== version ||
   readJson(paths.tauri).version !== version ||
-  cargoVersion(paths.cargo) !== version
+  cargoVersion(paths.cargo) !== version ||
+  cargoLockVersion(paths.cargoLock) !== version
 ) {
   throw new Error(`Run pnpm release:prepare ${version} before publishing.`);
 }
@@ -50,6 +53,7 @@ if (hasStagedChanges()) {
 runGit([
   "add",
   "package.json",
+  "src-tauri/Cargo.lock",
   "src-tauri/Cargo.toml",
   "src-tauri/tauri.conf.json",
   `release-notes/v${version}.json`,
@@ -58,7 +62,7 @@ if (hasStagedChanges()) {
   runGit(["commit", "-m", `chore(release): prepare v${version}`]);
 }
 runGit(["tag", `v${version}`]);
-runGit(["push", "origin", "HEAD:main", "--follow-tags"]);
+runGit(["push", "origin", "HEAD:main", `refs/tags/v${version}`]);
 
 function updateJsonVersion(path, nextVersion) {
   const content = readFileSync(path, "utf8");
@@ -77,6 +81,22 @@ function updateCargoVersion(path, nextVersion) {
 
 function cargoVersion(path) {
   const match = readFileSync(path, "utf8").match(/\[package\][\s\S]*?^version = "([^"]+)"/m);
+  return match?.[1];
+}
+
+function updateCargoLockVersion(path, nextVersion) {
+  const content = readFileSync(path, "utf8");
+  const pattern = /(\[\[package\]\]\nname = "pdfforge"\nversion = ")[^"]+(")/;
+  if (!pattern.test(content)) {
+    throw new Error("Unable to update the PDFForge version in Cargo.lock.");
+  }
+  writeFileSync(path, content.replace(pattern, `$1${nextVersion}$2`));
+}
+
+function cargoLockVersion(path) {
+  const match = readFileSync(path, "utf8").match(
+    /\[\[package\]\]\nname = "pdfforge"\nversion = "([^"]+)"/,
+  );
   return match?.[1];
 }
 

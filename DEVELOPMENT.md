@@ -108,8 +108,8 @@ For an OpenSSL-generated private PEM, derive the repository variable with
 `openssl pkey -in update-ed25519.pem -pubout -outform DER | tail -c 32 | base64 -w0`.
 
 Prepare release `vX.Y.Z` with `pnpm release:prepare X.Y.Z`. It synchronizes
-the version in `package.json`, `src-tauri/Cargo.toml` and
-`src-tauri/tauri.conf.json`, and creates the `release-notes/vX.Y.Z.json`
+the version in `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`
+and `src-tauri/tauri.conf.json`, and creates the `release-notes/vX.Y.Z.json`
 template. Fill its non-empty `fr` and `en` notes, then run
 `pnpm release:publish X.Y.Z`. This validates the release, commits it as
 `chore(release): prepare vX.Y.Z`, creates its tag and pushes the commit and tag
@@ -127,10 +127,12 @@ After pushing a version tag, find the distributable files in the repository’s
 Release assets with the newly built files.
 
 The CI and artifact workflows cache Cargo’s registry, Git dependencies and
-`src-tauri/target` independently for each operating system, Rust compiler
-version and `src-tauri/Cargo.lock`. A cache is reused only when all three match;
-the first build after changing Rust dependencies or deliberately upgrading Rust
-is expected to compile from scratch.
+`src-tauri/target` independently for each operating system and Rust compiler
+version. Their exact cache key also includes `src-tauri/Cargo.lock`; on an
+exact-key miss, the latest cache for the same operating system and compiler is
+restored. Cargo validates the restored artifacts and rebuilds only the parts
+incompatible with the lockfile. A Rust compiler upgrade still starts from an
+empty Cargo cache.
 
 Optional Windows signing uses these GitHub Actions secrets:
 
