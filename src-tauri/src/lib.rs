@@ -7,6 +7,7 @@ mod merge;
 mod pdfium;
 mod redaction;
 mod split;
+mod update;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,6 +17,7 @@ pub fn run() {
         .manage(merge::presentation::MergeRuntime::default())
         .manage(redaction::presentation::RedactionRuntime::default())
         .manage(split::presentation::SplitRuntime::default())
+        .manage(update::presentation::UpdateRuntime::default())
         .invoke_handler(tauri::generate_handler![
             merge::presentation::inspect_merge_sources,
             merge::presentation::preview_merge_output,
@@ -31,6 +33,11 @@ pub fn run() {
             split::presentation::preview_split_output,
             split::presentation::start_split,
             split::presentation::cancel_split,
+            update::presentation::update_status,
+            update::presentation::check_for_update,
+            update::presentation::start_update,
+            update::presentation::cancel_update,
+            update::presentation::restore_previous_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running PDFForge");

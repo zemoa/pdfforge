@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-restore-previous-update"
+description = "Enables the restore_previous_update command without any pre-configured scope."
+commands.allow = ["restore_previous_update"]
+
+[[permission]]
+identifier = "deny-restore-previous-update"
+description = "Denies the restore_previous_update command without any pre-configured scope."
+commands.deny = ["restore_previous_update"]

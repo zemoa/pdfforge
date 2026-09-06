@@ -94,9 +94,28 @@ Use Conventional Commits, for example `feat(pdf): add merge use case`, `fix(ui):
 
 Keep `pnpm-lock.yaml` and `src-tauri/Cargo.lock` committed. Direct JavaScript dependencies are exact. Update dependencies deliberately and verify the full quality gate.
 
+## Signed update releases
+
+Before publishing the first update-capable release, generate an Ed25519 key
+pair and keep the private PEM outside the repository. Configure the base64
+encoded 32-byte public key as the GitHub repository variable
+`UPDATE_ED25519_PUBLIC_KEY`, and configure the matching PEM as the secret
+`UPDATE_ED25519_PRIVATE_KEY`. The public key is compiled into release builds;
+the private key is used only by the release workflow. Never commit private-key
+material or a test key.
+
+For an OpenSSL-generated private PEM, derive the repository variable with
+`openssl pkey -in update-ed25519.pem -pubout -outform DER | tail -c 32 | base64 -w0`.
+
+Every `vX.Y.Z` tag requires matching versions in `package.json` and
+`src-tauri/tauri.conf.json`, plus `release-notes/vX.Y.Z.json` with non-empty
+`fr` and `en` strings. The workflow publishes a single Windows EXE and one
+Linux AppImage, each with `.sig` and `.sha256` sidecars. Do not rename those
+assets manually: the update domain matches their fixed names.
+
 ## CI, artifacts and signing
 
-`.github/workflows/ci.yml` validates pull requests and pushes on Linux and Windows. `.github/workflows/artifacts.yml` runs only for `v*` tags, builds the Linux AppImage and the ZIP containing the Windows executable, then publishes both files in a GitHub Release with automatically generated notes. The build artifacts remain available from the workflow run.
+`.github/workflows/ci.yml` validates pull requests and pushes on Linux and Windows. `.github/workflows/artifacts.yml` runs only for `v*` tags, builds the Linux AppImage and a self-contained Windows executable, signs them for in-application verification, and publishes both files in a GitHub Release. The build artifacts remain available from the workflow run.
 
 After pushing a version tag, find the distributable files in the repository’s
 **Releases** page. Re-running the workflow for an existing tag replaces the

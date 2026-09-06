@@ -24,6 +24,11 @@
     "allow-render-split-thumbnails",
     "allow-preview-split-output",
     "allow-start-split",
-    "allow-cancel-split"
+    "allow-cancel-split",
+    "allow-update-status",
+    "allow-check-for-update",
+    "allow-start-update",
+    "allow-cancel-update",
+    "allow-restore-previous-update"
   ]
 }

@@ -24,6 +24,10 @@ pub struct MergeRuntime {
 }
 
 impl MergeRuntime {
+    pub fn is_active(&self) -> bool {
+        self.active.lock().is_ok_and(|active| active.is_some())
+    }
+
     fn begin(&self) -> Result<Arc<AtomicBool>, String> {
         let mut active = self
             .active

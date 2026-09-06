@@ -13,6 +13,11 @@ fn main() {
             "start_redaction",
             "start_split",
             "cancel_split",
+            "update_status",
+            "check_for_update",
+            "start_update",
+            "cancel_update",
+            "restore_previous_update",
         ]),
     ))
     .expect("failed to build Tauri application");

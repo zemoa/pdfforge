@@ -1,4 +1,4 @@
-name: Build portable artifacts
+name: Build signed portable artifacts
 
 on:
   push:
@@ -11,6 +11,8 @@ jobs:
   linux-appimage:
     name: Linux AppImage
     runs-on: ubuntu-latest
+    env:
+      UPDATE_ED25519_PUBLIC_KEY: ${{ vars.UPDATE_ED25519_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -34,6 +36,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y
           libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev
           libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - run: test -n "$UPDATE_ED25519_PUBLIC_KEY"
       - run: pnpm install --frozen-lockfile
       - run: pnpm tauri build --bundles appimage
       - uses: actions/upload-artifact@v4
@@ -43,8 +46,10 @@ jobs:
           if-no-files-found: error
 
   windows-portable:
-    name: Windows portable ZIP
+    name: Windows portable executable
     runs-on: windows-latest
+    env:
+      UPDATE_ED25519_PUBLIC_KEY: ${{ vars.UPDATE_ED25519_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -64,52 +69,82 @@ jobs:
             ~/.cargo/git
             src-tauri/target
           key: ${{ runner.os }}-cargo-${{ steps.rust-toolchain.outputs.cachekey }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+      - shell: pwsh
+        run: if (-not $env:UPDATE_ED25519_PUBLIC_KEY) { throw "UPDATE_ED25519_PUBLIC_KEY is required." }
       - run: pnpm install --frozen-lockfile
       - run: pnpm tauri build --no-bundle
-      - name: Add the embedded PDFium runtime
-        shell: pwsh
-        run: Copy-Item src-tauri/resources/pdfium/windows-x86_64/bin/pdfium.dll src-tauri/target/release/pdfium.dll
-      - name: Sign executable when a certificate is configured
+      - name: Sign executable with Authenticode when configured
         shell: pwsh
         env:
           CERTIFICATE_PFX: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
           CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
           TIMESTAMP_URL: ${{ secrets.WINDOWS_SIGN_TIMESTAMP_URL }}
         run: |
-          if (-not $env:CERTIFICATE_PFX -or -not $env:CERTIFICATE_PASSWORD) {
-            Write-Host "No Windows signing certificate is configured; leaving the portable executable unsigned."
-            exit 0
-          }
+          if (-not $env:CERTIFICATE_PFX -or -not $env:CERTIFICATE_PASSWORD) { exit 0 }
           $certificatePath = Join-Path $env:RUNNER_TEMP "pdfforge-signing.pfx"
           [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:CERTIFICATE_PFX))
           $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
           $arguments = @("sign", "/fd", "SHA256", "/f", $certificatePath, "/p", $env:CERTIFICATE_PASSWORD)
           if ($env:TIMESTAMP_URL) { $arguments += @("/tr", $env:TIMESTAMP_URL, "/td", "SHA256") }
           & $signTool.FullName @arguments "src-tauri/target/release/PDFForge.exe"
-      - name: Create portable archive
-        shell: pwsh
-        run: Compress-Archive -Path src-tauri/target/release/PDFForge.exe,src-tauri/target/release/pdfium.dll -DestinationPath PDFForge-windows-x86_64.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: PDFForge-windows-x86_64-portable
-          path: PDFForge-windows-x86_64.zip
+          name: PDFForge-windows-x86_64-executable
+          path: src-tauri/target/release/PDFForge.exe
           if-no-files-found: error
 
   publish-release:
-    name: Publish GitHub Release
+    name: Publish signed GitHub Release
     needs: [linux-appimage, windows-portable]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      UPDATE_ED25519_PRIVATE_KEY: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY }}
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: PDFForge-linux-x86_64-AppImage
           path: release
       - uses: actions/download-artifact@v4
         with:
-          name: PDFForge-windows-x86_64-portable
+          name: PDFForge-windows-x86_64-executable
           path: release
+      - name: Validate release metadata and sign assets
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          test -n "$UPDATE_ED25519_PRIVATE_KEY"
+          VERSION="${TAG#v}"
+          test "$TAG" = "v$VERSION"
+          test "$(jq -r .version package.json)" = "$VERSION"
+          test "$(jq -r .version src-tauri/tauri.conf.json)" = "$VERSION"
+          grep -Fq "version = \"$VERSION\"" src-tauri/Cargo.toml
+          NOTES="release-notes/v$VERSION.json"
+          test -f "$NOTES"
+          test "$(jq -r .version "$NOTES")" = "$VERSION"
+          test -n "$(jq -r .fr "$NOTES")"
+          test -n "$(jq -r .en "$NOTES")"
+          mv release/*.AppImage "release/PDFForge-$VERSION-linux-x86_64.AppImage"
+          mv release/PDFForge.exe "release/PDFForge-$VERSION-windows-x86_64.exe"
+          printf '%s' "$UPDATE_ED25519_PRIVATE_KEY" > "$RUNNER_TEMP/update-ed25519.pem"
+          chmod 600 "$RUNNER_TEMP/update-ed25519.pem"
+          for artifact in release/PDFForge-*; do
+            openssl pkeyutl -sign -rawin -inkey "$RUNNER_TEMP/update-ed25519.pem" -in "$artifact" -out "$artifact.signature"
+            base64 -w 0 "$artifact.signature" > "$artifact.sig"
+            sha256sum "$artifact" > "$artifact.sha256"
+            rm "$artifact.signature"
+          done
+          {
+            echo '<!-- pdfforge-notes:fr:start -->'
+            jq -r .fr "$NOTES"
+            echo '<!-- pdfforge-notes:fr:end -->'
+            echo '<!-- pdfforge-notes:en:start -->'
+            jq -r .en "$NOTES"
+            echo '<!-- pdfforge-notes:en:end -->'
+          } > release-notes.md
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -117,7 +152,8 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" release/* --clobber
+            gh release edit "$TAG" --notes-file release-notes.md
+            gh release upload "$TAG" release/PDFForge-* --clobber
           else
-            gh release create "$TAG" --title "$TAG" --generate-notes release/*
+            gh release create "$TAG" --title "$TAG" --notes-file release-notes.md release/PDFForge-*
           fi

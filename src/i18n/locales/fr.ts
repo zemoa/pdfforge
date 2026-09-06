@@ -31,6 +31,28 @@ export default {
     split: "Scinder un PDF",
     splitDescription: "Extrayez des pages ou créez plusieurs documents.",
     tools: "Outils PDF",
+    version: "À propos et mises à jour",
+  },
+  update: {
+    available: "PDFForge {version} est disponible.",
+    cancel: "Annuler le téléchargement",
+    check: "Rechercher les mises à jour",
+    close: "Fermer",
+    downloading: "Téléchargement et vérification de la mise à jour…",
+    error: "La mise à jour a échoué",
+    install: "Télécharger et installer",
+    installationFailed:
+      "La mise à jour n’a pas pu être installée. Résolvez le problème puis réessayez.",
+    installed: "Version installée : {version}",
+    manualBody:
+      "PDFForge {version} a été téléchargé dans votre dossier Téléchargements pour un remplacement manuel.",
+    manualTitle: "Remplacement manuel nécessaire",
+    restore: "Restaurer la version précédente",
+    title: "À propos et mises à jour",
+    unsupported: "Cette version n’est pas disponible pour votre système.",
+    upToDate: "PDFForge est à jour.",
+    updated: "Mise à jour terminée",
+    updatedBody: "PDFForge a été mis à jour vers la version {version}.",
   },
   merge: {
     addFiles: "Ajouter des PDF",

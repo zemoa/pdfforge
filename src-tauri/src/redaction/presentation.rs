@@ -7,7 +7,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_opener::OpenerExt;
 
 use super::{
@@ -25,6 +25,10 @@ pub struct RedactionRuntime {
 }
 
 impl RedactionRuntime {
+    pub fn is_active(&self) -> bool {
+        self.active.lock().is_ok_and(|active| active.is_some())
+    }
+
     fn begin(&self) -> Result<Arc<AtomicBool>, String> {
         let mut active = self
             .active
@@ -350,53 +354,5 @@ fn validation_message(error: RedactionValidationError) -> String {
 }
 
 fn pdfium_library_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let resource_directory = app
-        .path()
-        .resource_dir()
-        .map_err(|error| format!("The PDF renderer path is unavailable: {error}"))?;
-    let platform_directory = if cfg!(target_os = "windows") {
-        "windows-x86_64"
-    } else {
-        "linux-x86_64"
-    };
-    let library_name = if cfg!(target_os = "windows") {
-        "pdfium.dll"
-    } else {
-        "libpdfium.so"
-    };
-    if cfg!(target_os = "windows") {
-        if let Ok(executable_directory) = app.path().executable_dir() {
-            let portable = executable_directory.join(library_name);
-            if portable.is_file() {
-                return Ok(portable);
-            }
-        }
-    }
-    let bundled = resource_directory
-        .join("pdfium")
-        .join(platform_directory)
-        .join(if cfg!(target_os = "windows") {
-            "bin"
-        } else {
-            "lib"
-        })
-        .join(library_name);
-    if bundled.is_file() {
-        return Ok(bundled);
-    }
-
-    let development = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("resources")
-        .join("pdfium")
-        .join(platform_directory)
-        .join(if cfg!(target_os = "windows") {
-            "bin"
-        } else {
-            "lib"
-        })
-        .join(library_name);
-    if development.is_file() {
-        return Ok(development);
-    }
-    Err("The bundled PDF renderer is missing.".to_owned())
+    crate::pdfium::library_path(app)
 }

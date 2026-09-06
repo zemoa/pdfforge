@@ -103,9 +103,9 @@ on cancellation or failure.
 
 `pdfium-render` backed by the checked-in PDFium 7881 Linux and Windows x86_64
 libraries is the replaceable local implementation for thumbnails and page copy.
-The Linux library and notices are AppImage resources; the Windows portable ZIP
-ships the matching DLL beside `PDFForge.exe`. Neither target needs a system
-library or network connection at runtime. PDFium access is serialized inside the
+The Linux library and notices are AppImage resources; the Windows portable EXE
+embeds the matching DLL and recreates it in application-local technical data.
+Neither target needs a system library or network connection at runtime. PDFium access is serialized inside the
 infrastructure adapter. Its process-wide library bindings are initialized once
 and then reused by both the split and redaction adapters. Successful output
 opening remains a backend opener action; the renderer receives no path-opening
@@ -131,6 +131,28 @@ the rendered page dimensions and visual orientation, but is no longer
 interactive or text-selectable. Progress and cancellation are owned by the
 redaction runtime; a cancellation or failure removes its reserved output file.
 
+### Explicit signed application updates (2026-09-06)
+
+FTR-006 introduces the independent `update` Rust business domain. It is the
+only code permitted to contact GitHub, and does so only after the user presses
+the explicit check command. It requests the public Releases API with the fixed
+`PDFForge` user agent; it never sends the installed version, platform, locale,
+or an installation identifier. The renderer reaches the domain only through
+the update Pinia store and typed client.
+
+The portable Windows executable is intentionally not handled by Tauri's
+installer-oriented updater plugin. PDFForge checks an artifact SHA-256 sidecar
+and then its detached Ed25519 signature with a public key embedded at build
+time. The only persistent update state is one rollback executable and a one-shot
+success marker. On Windows, PDFium is extracted from the EXE into versioned
+application-local technical data; it is neither document history nor telemetry.
+
+Installation is rejected while a PDF runtime is active. Linux replaces the
+AppImage and relaunches it; Windows uses a short-lived replacement script after
+the process exits. When the running location cannot be written, the verified
+asset is saved in Downloads for manual replacement. No check, download,
+installation, retry, or telemetry runs automatically.
+
 ## Dependency and quality policy
 
 Direct JavaScript dependencies are exact versions in `package.json`; `pnpm-lock.yaml` is committed and authoritative. Rust resolves compatible current Tauri 2 crates into committed `Cargo.lock`. TypeScript is pinned to the latest version supported by `typescript-eslint` (currently 6.0.3), rather than an incompatible newer compiler. Upgrade deliberately, regenerate locks, run the full checks, and record a material architectural change here.
@@ -144,6 +166,6 @@ Material decisions are recorded in this document under the relevant section, wit
 ### GitHub Releases for version tags (2026-09-01)
 
 Each pushed `vX.Y.Z` tag now publishes a GitHub Release after the Linux and
-Windows portable builds succeed. The Release receives the generated notes and
-contains the AppImage and the ZIP with `PDFForge.exe`; workflow artifacts are
-kept as the build-job outputs as well.
+Windows portable builds succeed. It contains the single AppImage and portable
+EXE, each with detached Ed25519 signature and SHA-256 sidecars. Bilingual notes
+are generated from the matching versioned release-notes JSON file.

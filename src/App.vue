@@ -10,6 +10,7 @@ import { computed } from "vue";
 import { RouterView } from "vue-router";
 
 import WindowControls from "./components/WindowControls.vue";
+import UpdateNotification from "./components/UpdateNotification.vue";
 import { useAppearance } from "./composables/useAppearance";
 
 const { resolvedTheme } = useAppearance();
@@ -54,6 +55,6 @@ const themeOverrides = computed<GlobalThemeOverrides>(() => {
 <template>
   <NConfigProvider :theme="naiveTheme" :theme-overrides="themeOverrides">
     <WindowControls />
-    <NMessageProvider><RouterView /></NMessageProvider>
+    <NMessageProvider><UpdateNotification /><RouterView /></NMessageProvider>
   </NConfigProvider>
 </template>

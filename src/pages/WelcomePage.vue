@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { NButton, NLayout, NLayoutContent, NSelect, NSpace, NText } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
+import packageInfo from "../../package.json";
 import BrandMark from "../components/BrandMark.vue";
 import LineIcon from "../components/LineIcon.vue";
+import UpdateDialog from "../components/UpdateDialog.vue";
 import { type AppearanceMode, useAppearance } from "../composables/useAppearance";
 import type { SupportedLocale } from "../i18n";
 
 const { t, locale } = useI18n();
 const router = useRouter();
 const { appearanceMode, selectAppearance } = useAppearance();
+const showUpdate = ref(false);
 
 const themeOptions = computed(() => [
   { label: t("appearance.system"), value: "system" },
@@ -90,11 +93,21 @@ function selectLanguage(value: SupportedLocale) {
                 @update:value="selectLanguage($event as SupportedLocale)"
               />
             </label>
+            <NButton
+              quaternary
+              size="small"
+              class="version-link"
+              :title="t('welcome.version')"
+              @click="showUpdate = true"
+            >
+              PDFForge v{{ packageInfo.version }}
+            </NButton>
           </NSpace>
         </div>
       </main>
     </NLayoutContent>
   </NLayout>
+  <UpdateDialog v-model:show="showUpdate" />
 </template>
 
 <style scoped>
@@ -220,6 +233,11 @@ function selectLanguage(value: SupportedLocale) {
   grid-template-columns: auto 7.75rem;
   align-items: center;
   gap: 0.5rem;
+}
+
+.version-link {
+  color: var(--text-tertiary);
+  font-size: 0.6875rem;
 }
 
 @media (max-width: 34rem) {
