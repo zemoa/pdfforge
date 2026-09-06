@@ -1,0 +1,5 @@
+{
+  "version": "0.3.1",
+  "fr": "Correction des couleurs de confirmation et d’erreur selon le thème actif, et des sélections de masquage selon la couleur d’accent.",
+  "en": "Fixed confirmation and error colors for the active theme, and redaction selections for the accent color."
+}
