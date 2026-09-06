@@ -678,7 +678,7 @@ function finishZoneGesture(event: PointerEvent) {
 }
 
 .zone-draft {
-  background: rgb(96 85 232 / 10%);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-color: var(--accent);
   pointer-events: none;
 }
@@ -728,7 +728,7 @@ function finishZoneGesture(event: PointerEvent) {
 .word-hitbox:hover,
 .word-hitbox:focus-visible,
 .word-hitbox.preview {
-  background: rgb(96 85 232 / 18%);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
   outline: 1px solid var(--accent);
 }
 
