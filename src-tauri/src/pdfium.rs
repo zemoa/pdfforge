@@ -22,7 +22,7 @@ pub fn load_or_reuse(path: &Path) -> Result<Pdfium, String> {
 pub fn library_path(app: &AppHandle) -> Result<PathBuf, String> {
     #[cfg(target_os = "windows")]
     {
-        return ensure_windows_library(app);
+        ensure_windows_library(app)
     }
     #[cfg(not(target_os = "windows"))]
     {

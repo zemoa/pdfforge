@@ -313,7 +313,7 @@ fn replace_with(
 
     #[cfg(target_os = "windows")]
     {
-        return replace_windows(
+        replace_windows(
             app,
             candidate,
             &current,
