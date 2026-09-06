@@ -2,7 +2,7 @@
 
 ## Statut du document
 
-Spécification fonctionnelle générale finalisée le 1er septembre 2026. Elle ne
+Spécification fonctionnelle générale mise à jour le 6 septembre 2026. Elle ne
 contient que les besoins explicitement confirmés par l'utilisateur final. Toute
 nouvelle règle doit être validée avant d'être ajoutée.
 
@@ -59,6 +59,13 @@ scinder des fichiers PDF de manière simple et rapide.
 | F-37      | Si l'utilisateur tente de fermer l'application pendant un traitement, l'application doit afficher un avertissement lui permettant d'annuler la fermeture et de revenir au traitement.                                     |
 | F-38      | Après un traitement réussi ou annulé, l'application doit revenir à un écran vide.                                                                                                                                         |
 | F-39      | L'application doit démarrer dans la langue du système.                                                                                                                                                                    |
+| F-40      | L'utilisateur doit pouvoir rechercher volontairement une mise à jour stable de PDFForge, publiée dans les GitHub Releases publiques du projet.                                                                            |
+| F-41      | L'application ne doit jamais vérifier ni télécharger une mise à jour sans une demande explicite de l'utilisateur. Les fonctions PDF restent utilisables sans connexion Internet.                                          |
+| F-42      | L'application doit afficher discrètement sa version installée et indiquer clairement si une version stable plus récente est disponible.                                                                                   |
+| F-43      | Après confirmation de l'utilisateur, l'application doit télécharger, vérifier, installer et redémarrer vers la mise à jour sans téléchargement ou installation manuels lorsque son emplacement est inscriptible.          |
+| F-44      | Avant toute installation, l'application doit vérifier la signature cryptographique et la somme de contrôle de chaque fichier de mise à jour ; en cas d'échec, elle doit supprimer les fichiers téléchargés.               |
+| F-45      | L'application ne doit transmettre aucune télémétrie, aucun identifiant persistant ni historique de mise à jour.                                                                                                           |
+| F-46      | L'application doit conserver une seule version antérieure afin que l'utilisateur puisse la restaurer ; une restauration redémarre l'ancienne version et supprime la version abandonnée.                                   |
 
 ## Exigences d'usage confirmées
 
@@ -148,6 +155,76 @@ demande pas de mot de passe. Elle laisse à l'utilisateur le choix d'arrêter
 l'opération ou d'ignorer ce PDF et de poursuivre avec les autres fichiers
 sélectionnés.
 
+### Mettre PDFForge à jour
+
+L'utilisateur accède à une fenêtre discrète « À propos et mises à jour » depuis
+un lien affichant la version de PDFForge dans les préférences de l'écran
+d'accueil. Cette fenêtre affiche la version installée et propose la commande
+« Rechercher les mises à jour ». Aucune vérification n'a lieu au démarrage, à
+intervalle régulier ou en arrière-plan.
+
+À la demande de l'utilisateur, l'application consulte exclusivement les GitHub
+Releases publiques du projet par HTTPS. Seules les Releases publiées, non
+brouillons et non préversions, dont le tag respecte le format `vX.Y.Z`, sont
+éligibles. Une Release devient disponible dès sa publication. L'application
+compare localement les versions selon leur numéro sémantique et ne propose
+jamais une version identique ou plus ancienne. La requête de vérification
+n'ajoute ni version locale, ni plateforme, ni langue, ni identifiant
+d'installation : ces informations servent uniquement dans l'application. Toute
+utilisation de GitHub implique néanmoins la transmission de l'adresse IP par le
+transport réseau, sans exploitation par PDFForge.
+
+Si aucune version n'est disponible, l'application affiche « PDFForge est à
+jour. ». Si aucune version n'est fournie pour la plateforme courante, elle
+affiche « Cette version n'est pas disponible pour votre système. ». Si une
+version est disponible, l'application affiche son numéro et ses notes. Chaque
+Release fournit des notes françaises et anglaises ; les notes françaises sont
+affichées lorsque la langue de l'utilisateur est le français, et les notes
+anglaises dans tous les autres cas. Aucun canal alpha, bêta ou préversion n'est
+proposé.
+
+L'utilisateur confirme le téléchargement par « Télécharger et installer ».
+Il peut l'annuler ; l'application supprime alors le fichier partiel. Elle
+affiche l'avancement du téléchargement et de l'installation. Elle ne réessaie
+jamais automatiquement un échec : elle affiche un message simple et
+l'utilisateur relance lui-même la recherche. Un manque d'espace disque est
+signalé comme une erreur et aucun fichier partiel n'est conservé.
+
+Les artefacts téléchargés doivent être signés cryptographiquement et accompagnés
+d'une somme de contrôle. L'application vérifie les deux avant l'installation et
+supprime le téléchargement en cas d'échec. Les mises à jour Linux et Windows
+comprennent tous les composants de PDFForge, y compris le moteur PDF embarqué.
+
+Sur Linux, l'artefact est une AppImage. Sur Windows, il s'agit d'un unique
+exécutable autonome qui extrait ses composants techniques dans le dossier local
+de l'utilisateur ; il recrée ces composants depuis lui-même s'ils ont été
+supprimés, lorsque cela est possible. Ces fichiers techniques ne constituent ni
+un historique de PDF ni une télémétrie.
+
+Si l'emplacement de l'application est inscriptible, l'installation remplace la
+version utilisée au même emplacement et relance immédiatement PDFForge. Si cet
+emplacement n'est pas inscriptible, l'application télécharge la nouvelle version
+dans le dossier Téléchargements de l'utilisateur, ouvre ce dossier et laisse
+l'utilisateur remplacer l'application manuellement. Les fichiers temporaires
+sont supprimés après une installation réussie, une annulation ou un échec de
+vérification.
+
+Une installation est refusée pendant un traitement PDF actif, avec un
+avertissement permettant d'annuler la fermeture et de revenir au traitement.
+Une préparation de traitement non encore lancée peut être perdue lors du
+redémarrage. Si une autre instance de PDFForge empêche le remplacement, ou si
+l'application a été déplacée, renommée ou supprimée pendant le téléchargement,
+l'installation est annulée, les fichiers téléchargés sont supprimés et
+l'utilisateur est invité à recommencer après avoir résolu le problème.
+
+PDFForge conserve dans un sous-dossier local une unique version antérieure,
+avec ses composants extraits. La fenêtre « À propos et mises à jour » propose
+« Restaurer la version précédente ». Cette action remplace la version courante,
+redémarre immédiatement l'ancienne version et supprime définitivement la version
+abandonnée. Après une mise à jour réussie suivie d'un redémarrage, l'application
+affiche « PDFForge a été mis à jour vers la version X. » et conserve toujours la
+version antérieure pour une restauration manuelle ultérieure.
+
 ## Périmètre de la première version
 
 La première version couvre uniquement les trois fonctions suivantes :
@@ -155,6 +232,9 @@ La première version couvre uniquement les trois fonctions suivantes :
 - fusionner des PDF ;
 - scinder des PDF ;
 - masquer définitivement des informations dans un PDF.
+
+Le mécanisme de mise à jour défini ci-dessus fait partie de la première version
+publiée, mais n'est pas une fonction de traitement PDF.
 
 Aucun autre besoin fonctionnel n'est demandé à ce stade.
 

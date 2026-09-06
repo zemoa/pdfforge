@@ -16,6 +16,7 @@ l'utilisateur final.
 3. [FTR-003 — Préparer un masquage de texte](FTR-003-masquage-texte.md)
 4. [FTR-004 — Préparer un masquage par zone](FTR-004-masquage-zone.md)
 5. [FTR-005 — Appliquer un masquage définitif](FTR-005-appliquer-masquage.md)
+6. [FTR-006 — Mettre PDFForge à jour](FTR-006-mettre-a-jour-pdfforge.md)
 
 Les exigences communes à plusieurs opérations (traitement local, conservation
 des originaux, destination, confirmation, progression, annulation et gestion
