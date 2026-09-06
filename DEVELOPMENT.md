@@ -107,11 +107,16 @@ material or a test key.
 For an OpenSSL-generated private PEM, derive the repository variable with
 `openssl pkey -in update-ed25519.pem -pubout -outform DER | tail -c 32 | base64 -w0`.
 
-Every `vX.Y.Z` tag requires matching versions in `package.json` and
-`src-tauri/tauri.conf.json`, plus `release-notes/vX.Y.Z.json` with non-empty
-`fr` and `en` strings. The workflow publishes a single Windows EXE and one
-Linux AppImage, each with `.sig` and `.sha256` sidecars. Do not rename those
-assets manually: the update domain matches their fixed names.
+Prepare release `vX.Y.Z` with `pnpm release:prepare X.Y.Z`. It synchronizes
+the version in `package.json`, `src-tauri/Cargo.toml` and
+`src-tauri/tauri.conf.json`, and creates the `release-notes/vX.Y.Z.json`
+template. Fill its non-empty `fr` and `en` notes, then run
+`pnpm release:publish X.Y.Z`. This validates the release, commits it as
+`chore(release): prepare vX.Y.Z`, creates its tag and pushes the commit and tag
+to `origin`. The workflow refuses a tag whose manifests or notes do not match.
+It publishes a single Windows EXE and one Linux AppImage, each with `.sig` and
+`.sha256` sidecars. Do not rename those assets manually: the update domain
+matches their fixed names.
 
 ## CI, artifacts and signing
 

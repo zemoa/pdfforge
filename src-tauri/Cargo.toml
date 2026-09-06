@@ -1,6 +1,6 @@
 [package]
 name = "pdfforge"
-version = "0.2.2"
+version = "0.3.0"
 description = "Portable, privacy-respecting PDFForge desktop application."
 authors = ["Zemoa"]
 license = "AGPL-3.0-or-later"
