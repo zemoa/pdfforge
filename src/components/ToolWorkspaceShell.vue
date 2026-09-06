@@ -49,7 +49,10 @@ function cycleAppearance() {
     class="tool-workspace-shell"
     :class="{
       'tool-workspace-shell--left-collapsed': leftPanelCollapsed,
+      'tool-workspace-shell--merge': activeTool === 'merge',
+      'tool-workspace-shell--redact': activeTool === 'redact',
       'tool-workspace-shell--right-collapsed': rightPanelCollapsed,
+      'tool-workspace-shell--split': activeTool === 'split',
       'tool-workspace-shell--without-right': !$slots['right-panel'],
     }"
   >
@@ -175,6 +178,21 @@ function cycleAppearance() {
 
 .tool-workspace-shell--without-right {
   grid-template-columns: var(--rail-width) var(--panel-width) minmax(0, 1fr);
+}
+
+.tool-workspace-shell--merge {
+  --accent: var(--universe-merge);
+  --accent-soft: var(--universe-merge-soft);
+}
+
+.tool-workspace-shell--split {
+  --accent: var(--universe-split);
+  --accent-soft: var(--universe-split-soft);
+}
+
+.tool-workspace-shell--redact {
+  --accent: var(--universe-redact);
+  --accent-soft: var(--universe-redact-soft);
 }
 
 .tool-workspace-shell--left-collapsed {

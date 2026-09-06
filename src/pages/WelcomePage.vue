@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton, NLayout, NLayoutContent, NSelect, NSpace, NText } from "naive-ui";
+import { NButton, NLayout, NLayoutContent, NSelect, NSpace, NText, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -36,42 +36,65 @@ function selectLanguage(value: SupportedLocale) {
     <NLayoutContent content-style="padding: 0;">
       <main class="welcome-page">
         <aside class="welcome-rail">
-          <BrandMark :size="28" /><span class="welcome-rail__line" />
+          <BrandMark :size="28" />
         </aside>
         <div class="welcome-content">
           <header class="welcome-header">
             <div>
-              <span class="eyebrow">PDFForge</span>
               <h1>{{ t("welcome.heading") }}</h1>
             </div>
             <NText depth="3">{{ t("welcome.body") }}</NText>
           </header>
 
           <section class="tools" :aria-label="t('welcome.tools')">
-            <NButton block class="tool-action" size="large" @click="router.push('/merge')">
-              <span class="tool-action__content">
-                <LineIcon name="merge" :size="18" /><span class="tool-action__title">{{
-                  t("welcome.merge")
-                }}</span>
-                <span class="tool-action__description">{{ t("welcome.mergeDescription") }}</span>
-              </span>
-            </NButton>
-            <NButton block class="tool-action" size="large" @click="router.push('/split')">
-              <span class="tool-action__content">
-                <LineIcon name="split" :size="18" /><span class="tool-action__title">{{
-                  t("welcome.split")
-                }}</span>
-                <span class="tool-action__description">{{ t("welcome.splitDescription") }}</span>
-              </span>
-            </NButton>
-            <NButton block class="tool-action" size="large" @click="router.push('/redact')">
-              <span class="tool-action__content">
-                <LineIcon name="redact" :size="18" /><span class="tool-action__title">{{
-                  t("welcome.redact")
-                }}</span>
-                <span class="tool-action__description">{{ t("welcome.redactDescription") }}</span>
-              </span>
-            </NButton>
+            <NTooltip>
+              <template #trigger>
+                <NButton
+                  block
+                  class="tool-action tool-action--merge"
+                  size="large"
+                  @click="router.push('/merge')"
+                >
+                  <span class="tool-action__content">
+                    <span class="tool-action__icon"><LineIcon name="merge" :size="32" /></span>
+                    <span class="tool-action__title">{{ t("welcome.merge") }}</span>
+                  </span>
+                </NButton>
+              </template>
+              {{ t("welcome.mergeDescription") }}
+            </NTooltip>
+            <NTooltip>
+              <template #trigger>
+                <NButton
+                  block
+                  class="tool-action tool-action--split"
+                  size="large"
+                  @click="router.push('/split')"
+                >
+                  <span class="tool-action__content">
+                    <span class="tool-action__icon"><LineIcon name="split" :size="32" /></span>
+                    <span class="tool-action__title">{{ t("welcome.split") }}</span>
+                  </span>
+                </NButton>
+              </template>
+              {{ t("welcome.splitDescription") }}
+            </NTooltip>
+            <NTooltip>
+              <template #trigger>
+                <NButton
+                  block
+                  class="tool-action tool-action--redact"
+                  size="large"
+                  @click="router.push('/redact')"
+                >
+                  <span class="tool-action__content">
+                    <span class="tool-action__icon"><LineIcon name="redact" :size="32" /></span>
+                    <span class="tool-action__title">{{ t("welcome.redact") }}</span>
+                  </span>
+                </NButton>
+              </template>
+              {{ t("welcome.redactDescription") }}
+            </NTooltip>
           </section>
 
           <NSpace class="preferences" align="center" justify="end" size="small" wrap>
@@ -135,14 +158,7 @@ function selectLanguage(value: SupportedLocale) {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   padding-top: 3.2rem;
-}
-
-.welcome-rail__line {
-  background: var(--border);
-  height: 2rem;
-  width: 1px;
 }
 
 .welcome-header {
@@ -157,7 +173,7 @@ function selectLanguage(value: SupportedLocale) {
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  margin: 0.3rem 0 0;
+  margin: 0;
 }
 
 .welcome-header :deep(.n-text) {
@@ -165,61 +181,90 @@ function selectLanguage(value: SupportedLocale) {
   max-width: 14rem;
 }
 
-.eyebrow {
-  color: var(--text);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
 .tools {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 1.25rem;
 }
 
 .tool-action {
   --n-color: transparent !important;
-  --n-color-focus: var(--surface) !important;
-  --n-color-hover: var(--surface) !important;
-  --n-color-pressed: var(--surface-secondary) !important;
+  --n-color-focus: var(--tool-surface) !important;
+  --n-color-hover: var(--tool-surface) !important;
+  --n-color-pressed: var(--tool-surface) !important;
   --n-text-color: var(--text) !important;
   --n-text-color-focus: var(--text) !important;
   --n-text-color-hover: var(--text) !important;
   --n-text-color-pressed: var(--text) !important;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--tool-border);
   color: var(--text);
+  aspect-ratio: 1;
   height: auto;
-  min-height: 4.4rem;
+  min-height: 0;
   padding: 0.2rem;
-  text-align: left;
+  text-align: center;
 }
 
 .tool-action:hover {
-  background: var(--surface);
-  border-color: var(--border);
+  background: var(--tool-surface);
+  border-color: var(--tool-color);
+}
+
+.tool-action:is(:hover, :focus-visible) :deep(.n-button__content) {
+  color: var(--text) !important;
+}
+
+.tool-action--merge {
+  --tool-border: var(--universe-merge-border);
+  --tool-color: var(--universe-merge);
+  --tool-surface: var(--universe-merge-soft);
+}
+
+.tool-action--split {
+  --tool-border: var(--universe-split-border);
+  --tool-color: var(--universe-split);
+  --tool-surface: var(--universe-split-soft);
+}
+
+.tool-action--redact {
+  --tool-border: var(--universe-redact-border);
+  --tool-color: var(--universe-redact);
+  --tool-surface: var(--universe-redact-soft);
+}
+
+.tool-action :deep(.n-button__content) {
+  min-width: 0;
+  white-space: normal;
 }
 
 .tool-action__content {
+  align-content: center;
   align-items: center;
   display: grid;
-  gap: 0.2rem 0.7rem;
-  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
   width: 100%;
-  padding: 0.65rem 0.75rem;
+  padding: 0.85rem;
+}
+
+.tool-action__icon {
+  align-items: center;
+  background: var(--tool-surface);
+  border: 1px solid var(--tool-border);
+  border-radius: 50%;
+  color: var(--tool-color);
+  display: flex;
+  height: 4.25rem;
+  justify-content: center;
+  width: 4.25rem;
 }
 
 .tool-action__title {
   font-size: 0.78rem;
   font-weight: 650;
-}
-
-.tool-action__description {
-  color: var(--text-secondary);
-  font-size: 0.6875rem;
-  font-weight: 400;
-  line-height: 1.35;
-  grid-column: 2;
 }
 
 .preferences {
@@ -248,6 +293,9 @@ function selectLanguage(value: SupportedLocale) {
   .welcome-header {
     align-items: start;
     flex-direction: column;
+    gap: 0.5rem;
+  }
+  .tools {
     gap: 0.5rem;
   }
   .preferences {
