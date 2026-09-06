@@ -80,6 +80,14 @@ Current PDFium 7881 library checksums:
 
 Place product strings in both `src/i18n/locales/en.ts` and `src/i18n/locales/fr.ts`. Do not add untranslated UI text. The initial locale comes from the system and falls back to English. Theme mode is a UI preference (light, dark, system; default system) retained in localStorage.
 
+## Application icon
+
+`src-tauri/icons/app-icon.svg` is the canonical application-icon artwork. After changing it, regenerate all committed platform variants with:
+
+```bash
+pnpm tauri icon src-tauri/icons/app-icon.svg
+```
+
 ## Versioning and commits
 
 Use Conventional Commits, for example `feat(pdf): add merge use case`, `fix(ui): preserve selection`, `docs: clarify IPC boundary`, and `chore(deps): update tauri`. Do not create a changelog. Version releases by pushing a Git tag in the form `vX.Y.Z` after the project version has been updated.

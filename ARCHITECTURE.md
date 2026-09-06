@@ -6,16 +6,16 @@ PDFForge is a portable desktop application owned by Zemoa. This repository curre
 
 ## Platform and delivery decisions
 
-| Concern               | Decision                                                                                                                                 |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop framework     | Latest stable Tauri 2, with a Rust backend and a Vue 3 TypeScript renderer.                                                              |
-| Supported targets     | Linux x86_64 and Windows x86_64.                                                                                                         |
-| Linux delivery        | AppImage only. It is portable; a host may need FUSE to mount it. Compatibility is targeted at Ubuntu, Debian and Fedora.                 |
-| Windows delivery      | A ZIP containing `PDFForge.exe`; it is not an installer. WebView2 is relied upon for now.                                                |
-| CI                    | GitHub Actions validates pull requests and publishes a GitHub Release with the Linux AppImage and Windows ZIP for `vX.Y.Z` tags.         |
-| Updates and telemetry | Neither automatic updates nor telemetry are included.                                                                                    |
-| Windows signing       | Optional in CI when a PFX certificate and password secrets are supplied; otherwise the artifact is unsigned and may trigger SmartScreen. |
-| Branding              | The generated Tauri icon is temporary until Zemoa supplies the PDFForge visual identity.                                                 |
+| Concern               | Decision                                                                                                                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop framework     | Latest stable Tauri 2, with a Rust backend and a Vue 3 TypeScript renderer.                                                                                                               |
+| Supported targets     | Linux x86_64 and Windows x86_64.                                                                                                                                                          |
+| Linux delivery        | AppImage only. It is portable; a host may need FUSE to mount it. Compatibility is targeted at Ubuntu, Debian and Fedora.                                                                  |
+| Windows delivery      | A ZIP containing `PDFForge.exe`; it is not an installer. WebView2 is relied upon for now.                                                                                                 |
+| CI                    | GitHub Actions validates pull requests and publishes a GitHub Release with the Linux AppImage and Windows ZIP for `vX.Y.Z` tags.                                                          |
+| Updates and telemetry | Neither automatic updates nor telemetry are included.                                                                                                                                     |
+| Windows signing       | Optional in CI when a PFX certificate and password secrets are supplied; otherwise the artifact is unsigned and may trigger SmartScreen.                                                  |
+| Branding              | PDFForge uses a violet document-fold icon derived from the product theme. The canonical source is `src-tauri/icons/app-icon.svg`; generated platform variants are committed alongside it. |
 
 ## Layering and dependency direction
 

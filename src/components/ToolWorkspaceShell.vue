@@ -3,6 +3,7 @@ import { NButton, NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
+import BrandMark from "./BrandMark.vue";
 import LineIcon from "./LineIcon.vue";
 import { useAppearance } from "../composables/useAppearance";
 
@@ -62,7 +63,7 @@ function cycleAppearance() {
             :disabled="navigationDisabled"
             @click="navigate('/')"
           >
-            <span aria-hidden="true" class="brand-mark">F</span>
+            <BrandMark :size="28" />
           </NButton>
         </template>
         {{ t("common.home") }}
@@ -210,19 +211,7 @@ function cycleAppearance() {
 }
 
 .brand-button {
-  color: var(--text);
-  font-size: 1.35rem;
-  font-style: italic;
-  font-weight: 850;
-}
-
-.brand-mark {
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  display: grid;
-  height: 1.5rem;
-  place-items: center;
-  width: 1.5rem;
+  color: var(--accent);
 }
 
 .tool-rail__tools {

@@ -4,6 +4,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
+import BrandMark from "../components/BrandMark.vue";
 import LineIcon from "../components/LineIcon.vue";
 import { type AppearanceMode, useAppearance } from "../composables/useAppearance";
 import type { SupportedLocale } from "../i18n";
@@ -32,7 +33,7 @@ function selectLanguage(value: SupportedLocale) {
     <NLayoutContent content-style="padding: 0;">
       <main class="welcome-page">
         <aside class="welcome-rail">
-          <span class="welcome-brand">F</span><span class="welcome-rail__line" />
+          <BrandMark :size="28" /><span class="welcome-rail__line" />
         </aside>
         <div class="welcome-content">
           <header class="welcome-header">
@@ -123,18 +124,6 @@ function selectLanguage(value: SupportedLocale) {
   flex-direction: column;
   gap: 1.5rem;
   padding-top: 3.2rem;
-}
-
-.welcome-brand {
-  border: 1px solid var(--text);
-  border-radius: 4px;
-  display: grid;
-  font-size: 1rem;
-  font-style: italic;
-  font-weight: 800;
-  height: 1.5rem;
-  place-items: center;
-  width: 1.5rem;
 }
 
 .welcome-rail__line {
