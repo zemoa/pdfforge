@@ -23,7 +23,7 @@ kept after the application closes.
 Pages retain their size, orientation, and content. Before confirmation,
 PDFForge warns you about interactive elements it cannot guarantee to preserve.
 
-![Empty Merge workspace, with source PDF and output settings panels](docs/images/merge.png)
+![Empty Merge workspace, with document and output panels](docs/images/merge.png)
 
 ### Split a PDF
 
@@ -36,7 +36,7 @@ When splitting creates several PDFs, PDFForge opens only their containing
 folder. Each result retains its pages' size and orientation, without modifying
 the source document.
 
-![Empty Split workspace, with source PDF and output document settings panels](docs/images/split.png)
+![Empty Split workspace, with document and output panels](docs/images/split.png)
 
 ### Permanently redact information
 
@@ -51,7 +51,7 @@ By default, the result is saved next to the source document as
 `<document-name>-masked.pdf`. Both its name and folder can be changed before
 confirmation.
 
-![Empty Redact workspace, with source PDF and selection panels](docs/images/redact.png)
+![Empty Redact workspace, with source and selection panels](docs/images/redact.png)
 
 ## Safe, predictable workflow
 
