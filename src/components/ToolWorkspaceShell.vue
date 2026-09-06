@@ -3,6 +3,9 @@ import { NButton, NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
+import LineIcon from "./LineIcon.vue";
+import { useAppearance } from "../composables/useAppearance";
+
 type ToolId = "merge" | "split" | "redact";
 
 const props = withDefaults(
@@ -16,17 +19,27 @@ const props = withDefaults(
 
 const { t } = useI18n();
 const router = useRouter();
+const { appearanceMode, selectAppearance } = useAppearance();
 const leftPanelCollapsed = defineModel<boolean>("leftPanelCollapsed", { default: false });
 const rightPanelCollapsed = defineModel<boolean>("rightPanelCollapsed", { default: false });
 
-const tools: ReadonlyArray<{ id: ToolId; label: "merge" | "split" | "redact"; symbol: string }> = [
-  { id: "merge", label: "merge", symbol: "↗" },
-  { id: "split", label: "split", symbol: "÷" },
-  { id: "redact", label: "redact", symbol: "▰" },
+const tools: ReadonlyArray<{
+  id: ToolId;
+  label: "merge" | "split" | "redact";
+  icon: "merge" | "split" | "redact";
+}> = [
+  { id: "merge", label: "merge", icon: "merge" },
+  { id: "split", label: "split", icon: "split" },
+  { id: "redact", label: "redact", icon: "redact" },
 ];
 
 function navigate(path: string) {
   if (!props.navigationDisabled) void router.push(path);
+}
+
+function cycleAppearance() {
+  const nextMode = appearanceMode.value === "light" ? "dark" : "light";
+  selectAppearance(nextMode);
 }
 </script>
 
@@ -36,6 +49,7 @@ function navigate(path: string) {
     :class="{
       'tool-workspace-shell--left-collapsed': leftPanelCollapsed,
       'tool-workspace-shell--right-collapsed': rightPanelCollapsed,
+      'tool-workspace-shell--without-right': !$slots['right-panel'],
     }"
   >
     <nav class="tool-rail" :aria-label="t('common.navigation')">
@@ -48,7 +62,7 @@ function navigate(path: string) {
             :disabled="navigationDisabled"
             @click="navigate('/')"
           >
-            <span aria-hidden="true">F</span>
+            <span aria-hidden="true" class="brand-mark">F</span>
           </NButton>
         </template>
         {{ t("common.home") }}
@@ -66,20 +80,46 @@ function navigate(path: string) {
               :disabled="navigationDisabled"
               @click="navigate(`/${tool.id}`)"
             >
-              <span aria-hidden="true">{{ tool.symbol }}</span>
+              <LineIcon :name="tool.icon" :size="18" />
             </NButton>
           </template>
           {{ t(`common.tools.${tool.label}`) }}
         </NTooltip>
       </div>
+      <div class="tool-rail__bottom">
+        <NTooltip placement="right">
+          <template #trigger>
+            <NButton
+              quaternary
+              class="tool-rail__button"
+              :aria-label="t('common.theme')"
+              @click="cycleAppearance"
+            >
+              <LineIcon name="theme" :size="17" />
+            </NButton>
+          </template>
+          {{ t("common.theme") }}
+        </NTooltip>
+        <NButton
+          quaternary
+          class="tool-rail__button"
+          :aria-label="t('common.preferences')"
+          @click="navigate('/')"
+        >
+          <LineIcon name="settings" :size="17" />
+        </NButton>
+      </div>
     </nav>
 
     <header class="tool-topbar">
       <div class="tool-topbar__title">
-        <span class="tool-topbar__eyebrow">PDFForge</span>
+        <span class="tool-topbar__brand">PDFForge</span>
         <h1>{{ title }}</h1>
       </div>
-      <slot name="topbar" />
+      <div class="tool-topbar__actions">
+        <slot name="topbar" />
+        <span class="local-status"><i />{{ t("common.local") }}</span>
+      </div>
     </header>
 
     <aside
@@ -100,6 +140,7 @@ function navigate(path: string) {
     <main class="tool-main"><slot /></main>
 
     <aside
+      v-if="$slots['right-panel']"
       class="tool-panel tool-panel--right"
       :class="{ 'tool-panel--collapsed': rightPanelCollapsed }"
     >
@@ -121,18 +162,26 @@ function navigate(path: string) {
 <style scoped>
 .tool-workspace-shell {
   --rail-width: 3.75rem;
-  --panel-width: 17.5rem;
+  --panel-width: 14.25rem;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: var(--rail-width) var(--panel-width) minmax(0, 1fr) var(--panel-width);
-  grid-template-rows: 3.25rem minmax(0, 1fr) auto;
+  grid-template-rows: 3rem minmax(0, 1fr) auto;
   height: 100vh;
   min-height: 36rem;
   padding-top: 2.25rem;
 }
 
+.tool-workspace-shell--without-right {
+  grid-template-columns: var(--rail-width) var(--panel-width) minmax(0, 1fr);
+}
+
 .tool-workspace-shell--left-collapsed {
   grid-template-columns: var(--rail-width) 0 minmax(0, 1fr) var(--panel-width);
+}
+
+.tool-workspace-shell--without-right.tool-workspace-shell--left-collapsed {
+  grid-template-columns: var(--rail-width) 0 minmax(0, 1fr);
 }
 
 .tool-workspace-shell--right-collapsed {
@@ -144,8 +193,8 @@ function navigate(path: string) {
 }
 
 .tool-rail {
-  background: color-mix(in srgb, var(--n-color) 96%, var(--n-base-color));
-  border-right: 1px solid var(--n-border-color);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   grid-column: 1;
@@ -155,16 +204,25 @@ function navigate(path: string) {
 
 .brand-button,
 .tool-rail__button {
-  height: 2.75rem;
+  height: 2.5rem;
   padding: 0;
   width: 2.75rem;
 }
 
 .brand-button {
-  color: var(--n-primary-color);
+  color: var(--text);
   font-size: 1.35rem;
   font-style: italic;
   font-weight: 850;
+}
+
+.brand-mark {
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  display: grid;
+  height: 1.5rem;
+  place-items: center;
+  width: 1.5rem;
 }
 
 .tool-rail__tools {
@@ -173,24 +231,41 @@ function navigate(path: string) {
   margin-top: 1.75rem;
 }
 
+.tool-rail__bottom {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
 .tool-rail__button {
   font-size: 1.25rem;
 }
 
 .tool-rail__button--active {
-  background: color-mix(in srgb, var(--n-primary-color) 16%, transparent);
-  color: var(--n-primary-color);
+  --n-color-hover: var(--accent-soft) !important;
+  --n-color-pressed: var(--accent-soft) !important;
+  --n-text-color-hover: var(--accent) !important;
+  --n-text-color-pressed: var(--accent) !important;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tool-rail__button:not(.tool-rail__button--active):hover,
+.brand-button:hover {
+  background: var(--surface-secondary);
+  color: var(--text);
 }
 
 .tool-topbar {
   align-items: center;
-  border-bottom: 1px solid var(--n-border-color);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   grid-column: 2 / -1;
   grid-row: 1;
   justify-content: space-between;
   min-width: 0;
-  padding: 0 1.25rem;
+  padding: 0 8rem 0 1.25rem;
 }
 
 .tool-topbar__title {
@@ -200,26 +275,48 @@ function navigate(path: string) {
   min-width: 0;
 }
 
-.tool-topbar__eyebrow {
-  color: var(--n-text-color-3);
-  font-size: 0.75rem;
+.tool-topbar__brand {
+  color: var(--text);
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .tool-topbar h1 {
-  font-size: 1rem;
-  font-weight: 650;
-  letter-spacing: -0.015em;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.tool-topbar__actions {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.local-status {
+  align-items: center;
+  color: var(--text-secondary);
+  display: inline-flex;
+  font-size: 0.6875rem;
+  gap: 0.38rem;
+  white-space: nowrap;
+}
+
+.local-status i {
+  background: var(--success);
+  border-radius: 50%;
+  height: 0.38rem;
+  width: 0.38rem;
+}
+
 .tool-panel {
-  background: color-mix(in srgb, var(--n-color) 98%, var(--n-base-color));
+  background: var(--bg);
   min-width: 0;
   overflow: visible;
   position: relative;
@@ -227,13 +324,13 @@ function navigate(path: string) {
 }
 
 .tool-panel--left {
-  border-right: 1px solid var(--n-border-color);
+  border-right: 1px solid var(--border);
   grid-column: 2;
   grid-row: 2;
 }
 
 .tool-panel--right {
-  border-left: 1px solid var(--n-border-color);
+  border-left: 1px solid var(--border);
   grid-column: 4;
   grid-row: 2;
 }
@@ -251,7 +348,7 @@ function navigate(path: string) {
 .tool-panel__body {
   box-sizing: border-box;
   display: grid;
-  gap: 0.9rem;
+  gap: 0.75rem;
   height: 100%;
   overflow: auto;
   padding: 1rem;
@@ -260,9 +357,9 @@ function navigate(path: string) {
 
 .panel-toggle {
   align-items: center;
-  background: var(--n-color);
-  border: 1px solid var(--n-border-color);
-  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   display: flex;
   height: 1.75rem;
   justify-content: center;
@@ -282,6 +379,7 @@ function navigate(path: string) {
 }
 
 .tool-main {
+  background: var(--surface-secondary);
   grid-column: 3;
   grid-row: 2;
   min-width: 0;
@@ -290,12 +388,13 @@ function navigate(path: string) {
 
 .tool-statusbar {
   align-items: center;
-  border-top: 1px solid var(--n-border-color);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   display: flex;
   grid-column: 2 / -1;
   grid-row: 3;
-  min-height: 3.25rem;
-  padding: 0 1rem;
+  min-height: 3.5rem;
+  padding: 0 1.25rem;
 }
 
 @media (max-width: 58rem) {
@@ -306,6 +405,10 @@ function navigate(path: string) {
   .tool-workspace-shell--left-collapsed,
   .tool-workspace-shell--right-collapsed,
   .tool-workspace-shell--left-collapsed.tool-workspace-shell--right-collapsed {
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  }
+
+  .tool-workspace-shell--without-right {
     grid-template-columns: var(--rail-width) minmax(0, 1fr);
   }
 

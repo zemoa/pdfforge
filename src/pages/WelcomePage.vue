@@ -4,6 +4,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
+import LineIcon from "../components/LineIcon.vue";
 import { type AppearanceMode, useAppearance } from "../composables/useAppearance";
 import type { SupportedLocale } from "../i18n";
 
@@ -28,36 +29,42 @@ function selectLanguage(value: SupportedLocale) {
 
 <template>
   <NLayout class="application-shell">
-    <NLayoutContent content-style="padding: 2rem;">
+    <NLayoutContent content-style="padding: 0;">
       <main class="welcome-page">
+        <aside class="welcome-rail">
+          <span class="welcome-brand">F</span><span class="welcome-rail__line" />
+        </aside>
         <div class="welcome-content">
           <header class="welcome-header">
-            <h1>{{ t("welcome.heading") }}</h1>
+            <div>
+              <span class="eyebrow">PDFForge</span>
+              <h1>{{ t("welcome.heading") }}</h1>
+            </div>
             <NText depth="3">{{ t("welcome.body") }}</NText>
           </header>
 
           <section class="tools" :aria-label="t('welcome.tools')">
-            <NButton
-              block
-              class="tool-action"
-              type="primary"
-              size="large"
-              @click="router.push('/merge')"
-            >
+            <NButton block class="tool-action" size="large" @click="router.push('/merge')">
               <span class="tool-action__content">
-                <span class="tool-action__title">{{ t("welcome.merge") }}</span>
+                <LineIcon name="merge" :size="18" /><span class="tool-action__title">{{
+                  t("welcome.merge")
+                }}</span>
                 <span class="tool-action__description">{{ t("welcome.mergeDescription") }}</span>
               </span>
             </NButton>
             <NButton block class="tool-action" size="large" @click="router.push('/split')">
               <span class="tool-action__content">
-                <span class="tool-action__title">{{ t("welcome.split") }}</span>
+                <LineIcon name="split" :size="18" /><span class="tool-action__title">{{
+                  t("welcome.split")
+                }}</span>
                 <span class="tool-action__description">{{ t("welcome.splitDescription") }}</span>
               </span>
             </NButton>
             <NButton block class="tool-action" size="large" @click="router.push('/redact')">
               <span class="tool-action__content">
-                <span class="tool-action__title">{{ t("welcome.redact") }}</span>
+                <LineIcon name="redact" :size="18" /><span class="tool-action__title">{{
+                  t("welcome.redact")
+                }}</span>
                 <span class="tool-action__description">{{ t("welcome.redactDescription") }}</span>
               </span>
             </NButton>
@@ -91,59 +98,132 @@ function selectLanguage(value: SupportedLocale) {
 
 <style scoped>
 .application-shell {
+  background: var(--bg);
   min-height: 100vh;
 }
 
 .welcome-page {
   display: grid;
-  min-height: calc(100vh - 4rem);
-  place-items: center;
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+  min-height: 100vh;
 }
 
 .welcome-content {
-  width: min(100%, 48rem);
+  align-self: center;
+  margin: 2.25rem auto 0;
+  padding: 2rem;
+  width: min(100% - 4rem, 39rem);
+}
+
+.welcome-rail {
+  align-items: center;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: 3.2rem;
+}
+
+.welcome-brand {
+  border: 1px solid var(--text);
+  border-radius: 4px;
+  display: grid;
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 800;
+  height: 1.5rem;
+  place-items: center;
+  width: 1.5rem;
+}
+
+.welcome-rail__line {
+  background: var(--border);
+  height: 2rem;
+  width: 1px;
+}
+
+.welcome-header {
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 1rem;
 }
 
 .welcome-header h1 {
-  margin: 0;
-  font-size: clamp(2rem, 7vw, 3rem);
-  letter-spacing: -0.04em;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0.3rem 0 0;
+}
+
+.welcome-header :deep(.n-text) {
+  font-size: 0.72rem;
+  max-width: 14rem;
+}
+
+.eyebrow {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .tools {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 2.5rem;
+  gap: 0.35rem;
+  margin-top: 1.25rem;
 }
 
 .tool-action {
+  --n-color: transparent !important;
+  --n-color-focus: var(--surface) !important;
+  --n-color-hover: var(--surface) !important;
+  --n-color-pressed: var(--surface-secondary) !important;
+  --n-text-color: var(--text) !important;
+  --n-text-color-focus: var(--text) !important;
+  --n-text-color-hover: var(--text) !important;
+  --n-text-color-pressed: var(--text) !important;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
   height: auto;
-  min-height: 5.75rem;
-  padding: 0.25rem 0.5rem;
+  min-height: 4.4rem;
+  padding: 0.2rem;
   text-align: left;
 }
 
+.tool-action:hover {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
 .tool-action__content {
+  align-items: center;
   display: grid;
-  gap: 0.3rem;
+  gap: 0.2rem 0.7rem;
+  grid-template-columns: auto minmax(0, 1fr);
   width: 100%;
   padding: 0.65rem 0.75rem;
 }
 
 .tool-action__title {
-  font-size: 1.0625rem;
+  font-size: 0.78rem;
   font-weight: 650;
 }
 
 .tool-action__description {
-  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
   font-weight: 400;
   line-height: 1.35;
-  opacity: 0.78;
+  grid-column: 2;
 }
 
 .preferences {
+  border-top: 1px solid var(--border);
   margin-top: 1.5rem;
+  padding-top: 1rem;
 }
 
 .preference-control {
@@ -154,6 +234,15 @@ function selectLanguage(value: SupportedLocale) {
 }
 
 @media (max-width: 34rem) {
+  .welcome-content {
+    padding: 1.25rem;
+    width: auto;
+  }
+  .welcome-header {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
   .preferences {
     justify-content: start;
   }

@@ -516,14 +516,23 @@ function finishZoneGesture(event: PointerEvent) {
     </template>
 
     <template #footer>
+      <div class="footer-copy">
+        {{ redaction.outputName || t("redaction.outputPlaceholder") }}.pdf
+        <span>{{ t("common.creationNote") }}</span>
+      </div>
       <NButton
-        block
-        type="primary"
-        size="large"
+        quaternary
+        :disabled="redaction.phase === 'running'"
+        @click="redaction.resetPreparation"
+      >
+        {{ t("common.reset") }}
+      </NButton>
+      <NButton
+        class="create-button"
         :disabled="redaction.phase === 'running' || !redaction.canRequestSummary"
         @click="openSummary"
       >
-        {{ t("redaction.review") }}
+        {{ t("redaction.review") }} <i />
       </NButton>
     </template>
   </ToolWorkspaceShell>
@@ -576,6 +585,7 @@ function finishZoneGesture(event: PointerEvent) {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  background: var(--surface-secondary);
   gap: 0.75rem;
   height: 100%;
   min-height: 0;
@@ -586,6 +596,20 @@ function finishZoneGesture(event: PointerEvent) {
   align-content: start;
   display: grid;
   gap: 0.75rem;
+}
+
+:deep(.n-card) {
+  background: transparent;
+  border: 0;
+  border-radius: 0 !important;
+}
+
+:deep(.n-card__content) {
+  padding: 0 !important;
+}
+
+:deep(.n-card-header) {
+  padding: 0 0 0.7rem !important;
 }
 
 .workspace-intro {
@@ -607,17 +631,26 @@ function finishZoneGesture(event: PointerEvent) {
 }
 
 .viewer-scroll {
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--surface-secondary) 88%, #b8b8b8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  display: flex;
   flex: 1;
+  justify-content: center;
   min-height: 0;
   overflow: auto;
 }
 
 .viewer-page {
-  margin: 0 auto;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 8%);
+  margin: 1.25rem auto;
   position: relative;
 }
 
 .viewer-page img {
+  border: 1px solid #d8d8d8;
+  border-radius: 2px;
   display: block;
   height: auto;
   user-select: none;
@@ -637,20 +670,22 @@ function finishZoneGesture(event: PointerEvent) {
 }
 
 .zone-preview {
-  background: #000;
-  border: 2px solid #f59e0b;
+  background: #111;
+  border: 2px solid #111;
   box-sizing: border-box;
   cursor: move;
   position: absolute;
 }
 
 .zone-draft {
+  background: rgb(96 85 232 / 10%);
+  border-color: var(--accent);
   pointer-events: none;
 }
 
 .zone-handle {
-  background: #f59e0b;
-  border: 1px solid #78350f;
+  background: var(--accent);
+  border: 1px solid var(--surface);
   border-radius: 50%;
   box-sizing: border-box;
   cursor: nwse-resize;
@@ -693,8 +728,8 @@ function finishZoneGesture(event: PointerEvent) {
 .word-hitbox:hover,
 .word-hitbox:focus-visible,
 .word-hitbox.preview {
-  background: rgb(245 158 11 / 65%);
-  outline: 1px solid rgb(146 64 14);
+  background: rgb(96 85 232 / 18%);
+  outline: 1px solid var(--accent);
 }
 
 .word-hitbox.selected {
@@ -704,7 +739,7 @@ function finishZoneGesture(event: PointerEvent) {
 
 .word-hitbox.selected.preview {
   background: rgb(31 41 55 / 85%);
-  outline: 1px solid rgb(245 158 11);
+  outline: 1px solid var(--accent);
 }
 
 .no-text-alert {
@@ -729,5 +764,34 @@ function finishZoneGesture(event: PointerEvent) {
 
 .zoom-controls {
   margin-top: 1rem;
+}
+
+.footer-copy {
+  color: var(--text-secondary);
+  flex: 1;
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer-copy span {
+  color: var(--text-tertiary);
+}
+
+.create-button {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--surface);
+  min-width: 9rem;
+}
+
+.create-button i {
+  background: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.35rem;
+  margin-left: 0.35rem;
+  width: 0.35rem;
 }
 </style>

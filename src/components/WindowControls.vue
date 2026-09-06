@@ -62,8 +62,8 @@ function toggleMaximize() {
   right: 0;
   left: 0;
   height: 2.25rem;
-  background-color: color-mix(in srgb, Canvas 94%, CanvasText);
-  border-bottom: 1px solid color-mix(in srgb, Canvas 78%, CanvasText);
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
   cursor: grab;
   user-select: none;
 }
@@ -75,8 +75,8 @@ function toggleMaximize() {
 .window-controls {
   display: flex;
   position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
+  top: 0.2rem;
+  right: 0.3rem;
   cursor: default;
 }
 
@@ -84,8 +84,8 @@ function toggleMaximize() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 1.75rem;
+  width: 2.1rem;
+  height: 1.7rem;
   padding: 0;
   font-size: 1.125rem;
   line-height: 1;
@@ -102,6 +102,16 @@ function toggleMaximize() {
 
 .window-control--close {
   font-size: 1.375rem;
+}
+
+.window-control:hover {
+  background: var(--surface-secondary);
+  color: var(--text);
+}
+
+.window-control--close:hover {
+  background: var(--danger);
+  color: #fff;
 }
 
 .visually-hidden {

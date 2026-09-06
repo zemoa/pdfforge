@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 export type AppearanceMode = "dark" | "light" | "system";
 type ResolvedTheme = Exclude<AppearanceMode, "system">;
@@ -22,6 +22,14 @@ const resolvedTheme = computed<ResolvedTheme>(() => {
 
   return appearanceMode.value;
 });
+
+watch(
+  resolvedTheme,
+  (theme) => {
+    document.documentElement.dataset.theme = theme;
+  },
+  { immediate: true },
+);
 
 export function useAppearance() {
   function selectAppearance(mode: AppearanceMode) {
