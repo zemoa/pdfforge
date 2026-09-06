@@ -5,15 +5,17 @@ description: Assess, propose, and prepare a PDFForge version release with biling
 
 # PDFForge Release Preparation
 
-Assess and prepare the requested PDFForge release without publishing it. The user always owns the final version choice.
+Assess and prepare the requested PDFForge release without publishing it. This
+is an interactive workflow: the user always approves both the exact version and
+the complete bilingual release notes before the skill changes any release file.
 
 ## Scope and source of truth
 
 - Work in the PDFForge repository. Read the **Signed update releases** section of `DEVELOPMENT.md` and inspect `scripts/release.mjs` before acting, so the local procedure remains authoritative.
-- This skill may run `pnpm release:prepare X.Y.Z` and edit only the generated `release-notes/vX.Y.Z.json` as part of preparing a version the user has explicitly confirmed.
+- This skill may run `pnpm release:prepare X.Y.Z` and edit only the generated `release-notes/vX.Y.Z.json` after the user has explicitly approved that exact version and the complete bilingual notes.
 - It must never run `pnpm release:publish`, create a Git tag, push a commit or tag, create/edit a GitHub Release, or rename release assets. Those are a separate, explicit publishing action.
 
-## Preparation workflow
+## Interactive preparation workflow
 
 1. Inspect `git status --short`, the current versions in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`, and the changes since the previous reachable version tag. Report unrelated existing changes; do not overwrite them without the user's direction.
 2. Categorize the evidence and propose one next version from the current version:
@@ -22,10 +24,11 @@ Assess and prepare the requested PDFForge release without publishing it. The use
    - Otherwise, increment `Z` for corrections only.
    - When the release contains several categories, use the highest applicable increment: major, then minor, then patch.
    Explain the evidence and classification behind the recommendation. Do not invent features, fixes, or user impact.
-3. The recommendation is advisory only. Do not run `pnpm release:prepare`, edit a version manifest, or create release notes until the user explicitly confirms the exact final `X.Y.Z` version. A version mentioned as an example or a possible target is not confirmation; an explicit instruction to prepare that exact version is.
-4. After confirmation, check whether `release-notes/vX.Y.Z.json` already exists, then run `pnpm release:prepare X.Y.Z`. It synchronizes the three manifests and creates the notes template when needed.
-5. Draft concise, factual, user-facing notes in both `fr` and `en` in `release-notes/vX.Y.Z.json`. Use the repository history and changed files as evidence. If there are no suitable changes or their user impact is unclear, ask the user for the missing information and leave the notes pending rather than fabricating them.
-6. When both notes are available, validate that all three manifests contain exactly `X.Y.Z`, the JSON is valid, its `version` is exactly `X.Y.Z`, and its `fr` and `en` strings are non-empty after trimming. Show the notes and the resulting working-tree changes for review.
+3. Present the proposed exact `X.Y.Z` version and **pause for the user's explicit validation**. Do not run `pnpm release:prepare`, edit a version manifest, or create release notes at this stage. A version mentioned as an example or a possible target is not confirmation. The user must explicitly approve the exact version (for example, “I approve version X.Y.Z” or “Prépare la version X.Y.Z”).
+4. Once the exact version is approved, draft concise, factual, user-facing notes in both `fr` and `en` from the repository history and changed files. Show the complete proposed notes in the conversation and **pause for the user's explicit validation of their content**. Do not change any release file yet. If there are no suitable changes or their user impact is unclear, ask the user for the missing information and leave the notes pending rather than fabricating them.
+5. Apply the release changes only after the user explicitly approves the exact bilingual notes. If the user requests a note change, revise the draft, show both complete notes again, and wait for a new explicit validation. If the user changes the version, return to step 3: validate the new exact version, then draft and validate its notes.
+6. After both approvals, check whether `release-notes/vX.Y.Z.json` already exists, then run `pnpm release:prepare X.Y.Z`. It synchronizes the three manifests and creates the notes template when needed. Write exactly the approved `fr` and `en` notes in that JSON file.
+7. Validate that all three manifests contain exactly `X.Y.Z`, the JSON is valid, its `version` is exactly `X.Y.Z`, and its `fr` and `en` strings are non-empty after trimming. Show the approved notes and the resulting working-tree changes. State clearly that the release is prepared but not published.
 
 ## Handoff
 
