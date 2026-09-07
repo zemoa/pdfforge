@@ -172,7 +172,6 @@ function cycleAppearance() {
   grid-template-columns: var(--rail-width) var(--panel-width) minmax(0, 1fr) var(--panel-width);
   grid-template-rows: 3rem minmax(0, 1fr) auto;
   height: 100vh;
-  min-height: 36rem;
   padding-top: 2.25rem;
 }
 

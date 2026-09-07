@@ -16,8 +16,9 @@
         "width": 1100,
         "height": 760,
         "decorations": false,
-        "minWidth": 960,
-        "minHeight": 640
+        "resizable": true,
+        "minWidth": 640,
+        "minHeight": 480
       }
     ],
     "security": {

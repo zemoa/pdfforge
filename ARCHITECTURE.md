@@ -59,9 +59,11 @@ The default capability grants only `core:default`; no filesystem, shell, HTTP, o
 ### Frameless window controls (2026-09-02)
 
 The main window has no native decorations. A reusable Vue control strip provides
-dragging, minimizing, maximizing/restoring and closing through the typed
-frontend `windowClient`; components never import the Tauri window API directly.
-The main-window capability grants only the corresponding four window actions.
+dragging, resizing from all four edges and corners, minimizing,
+maximizing/restoring and closing through the typed frontend `windowClient`;
+components never import the Tauri window API directly. The main-window
+capability grants only the corresponding five window actions. The initial size
+remains 1100 by 760 logical pixels, while the minimum usable size is 640 by 480.
 Closing still emits the existing close-request event, so an active PDF operation
 can prevent the window from closing.
 

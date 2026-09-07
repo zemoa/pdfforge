@@ -66,6 +66,7 @@ scinder des fichiers PDF de manière simple et rapide.
 | F-44      | Avant toute installation, l'application doit vérifier la signature cryptographique et la somme de contrôle de chaque fichier de mise à jour ; en cas d'échec, elle doit supprimer les fichiers téléchargés.               |
 | F-45      | L'application ne doit transmettre aucune télémétrie, aucun identifiant persistant ni historique de mise à jour.                                                                                                           |
 | F-46      | L'application doit conserver une seule version antérieure afin que l'utilisateur puisse la restaurer ; une restauration redémarre l'ancienne version et supprime la version abandonnée.                                   |
+| F-47      | L'utilisateur doit pouvoir redimensionner manuellement la fenêtre depuis chacun de ses côtés et de ses coins, jusqu'à une taille minimale de 640 × 480 pixels.                                                            |
 
 ## Exigences d'usage confirmées
 
