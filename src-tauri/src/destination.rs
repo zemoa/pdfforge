@@ -23,9 +23,9 @@ fn copied_paths() -> Option<Vec<PathBuf>> {
     use clipboard_win::{formats, Clipboard, Getter};
 
     let _clipboard = Clipboard::new_attempts(10).ok()?;
-    let mut paths: Vec<PathBuf> = Vec::new();
+    let mut paths: Vec<String> = Vec::new();
     formats::FileList.read_clipboard(&mut paths).ok()?;
-    Some(paths)
+    Some(paths.into_iter().map(PathBuf::from).collect())
 }
 
 #[cfg(not(target_os = "windows"))]
