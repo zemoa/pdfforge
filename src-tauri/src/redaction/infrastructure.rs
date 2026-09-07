@@ -110,17 +110,17 @@ impl PageRenderer for PdfiumService {
                 .render_with_config(&PdfRenderConfig::new().set_target_width(PAGE_RENDER_WIDTH))
                 .and_then(|bitmap| bitmap.as_image())
                 .map_err(|error| format!("The PDF preview could not be created: {error}"))?;
-            let mut png = Cursor::new(Vec::new());
+            let mut image_data = Cursor::new(Vec::new());
             image
-                .write_to(&mut png, ImageFormat::Png)
+                .write_to(&mut image_data, ImageFormat::Jpeg)
                 .map_err(|error| format!("The PDF preview could not be encoded: {error}"))?;
 
             Ok(RenderedPage {
                 page: page_number,
                 aspect_ratio: page_width / page_height,
-                png_data_url: format!(
-                    "data:image/png;base64,{}",
-                    STANDARD.encode(png.into_inner())
+                image_data_url: format!(
+                    "data:image/jpeg;base64,{}",
+                    STANDARD.encode(image_data.into_inner())
                 ),
                 words: words_for_page(&page, page_width, page_height)?,
             })

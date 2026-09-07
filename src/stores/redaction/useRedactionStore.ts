@@ -28,10 +28,18 @@ import { defaultOutputName, sourceDirectory } from "./output";
 
 export const useRedactionStore = defineStore("redaction", () => {
   const source = ref<RedactionSource | null>(null);
-  const renderedPage = ref<RedactionPage | null>(null);
+  const currentPage = ref(1);
+  const pageCache = ref<Record<number, RedactionPage>>({});
+  const pendingPageKeys = ref<string[]>([]);
+  const renderedPage = computed(() => pageCache.value[currentPage.value] ?? null);
   const selections = ref<SelectionsByPage>({});
   const zones = ref<ZonesByPage>({});
-  const loadingPage = ref(false);
+  const loadingPage = computed(
+    () =>
+      !!source.value &&
+      !renderedPage.value &&
+      pendingPageKeys.value.includes(pageKey(currentPage.value)),
+  );
   const errorCode = ref<ErrorCode | null>(null);
   const outputName = ref("");
   const destination = ref("");
@@ -39,14 +47,14 @@ export const useRedactionStore = defineStore("redaction", () => {
   const phase = ref<"preparing" | "running">("preparing");
   const progress = ref({ current: 0, total: 0, percent: 0 });
   const outcome = ref<"succeeded" | "cancelled" | null>(null);
-  let requestedPage = 0;
+  let sourceVersion = 0;
+  const pendingRenders = new Map<string, Promise<void>>();
   let nextZoneId = 1;
   let closeAfterCancellation = false;
   let unlisten: (() => void) | undefined;
   let unlistenDrop: (() => void) | undefined;
   let unlistenClose: (() => void) | undefined;
 
-  const currentPage = computed(() => renderedPage.value?.page ?? 1);
   const selectedWordIndexes = computed(
     () => new Set(Object.keys(selections.value[currentPage.value] ?? {}).map(Number)),
   );
@@ -141,8 +149,9 @@ export const useRedactionStore = defineStore("redaction", () => {
       errorCode.value = null;
       outcome.value = null;
       const nextSource = await redactionClient.inspectSource(paths);
+      clearPagePreviews();
       source.value = nextSource;
-      renderedPage.value = null;
+      currentPage.value = 1;
       selections.value = {};
       zones.value = {};
       nextZoneId = 1;
@@ -160,24 +169,78 @@ export const useRedactionStore = defineStore("redaction", () => {
     if (path) await addSelectedPaths([path]);
   }
 
+  function pageKey(page: number) {
+    return `${sourceVersion}:${page}`;
+  }
+
+  function clearPagePreviews() {
+    sourceVersion += 1;
+    pageCache.value = {};
+    pendingPageKeys.value = [];
+    pendingRenders.clear();
+  }
+
+  function trimPageCache() {
+    const retainedPages = new Set([
+      currentPage.value - 1,
+      currentPage.value,
+      currentPage.value + 1,
+    ]);
+    pageCache.value = Object.fromEntries(
+      Object.entries(pageCache.value).filter(([page]) => retainedPages.has(Number(page))),
+    );
+  }
+
+  function renderPage(page: number): Promise<void> {
+    const sourceAtRequest = source.value;
+    if (!sourceAtRequest) return Promise.resolve();
+
+    const key = pageKey(page);
+    const pendingRender = pendingRenders.get(key);
+    if (pendingRender) return pendingRender;
+    if (pageCache.value[page]) return Promise.resolve();
+
+    pendingPageKeys.value = [...pendingPageKeys.value, key];
+    const render = redactionClient
+      .renderPage(sourceAtRequest.path, page)
+      .then((pagePreview) => {
+        if (key !== pageKey(page) || source.value?.path !== sourceAtRequest.path) return;
+        pageCache.value = { ...pageCache.value, [page]: pagePreview };
+        trimPageCache();
+      })
+      .finally(() => {
+        if (pendingRenders.get(key) === render) pendingRenders.delete(key);
+        pendingPageKeys.value = pendingPageKeys.value.filter((pendingKey) => pendingKey !== key);
+      });
+    pendingRenders.set(key, render);
+    return render;
+  }
+
+  function preloadNeighborPages() {
+    if (!source.value) return;
+    for (const page of [currentPage.value - 1, currentPage.value + 1]) {
+      if (page >= 1 && page <= source.value.pageCount) void renderPage(page).catch(() => undefined);
+    }
+  }
+
   async function loadPage(page: number) {
     if (phase.value === "running" || !source.value || page < 1 || page > source.value.pageCount)
       return;
-    const request = ++requestedPage;
-    loadingPage.value = true;
     errorCode.value = null;
     try {
-      const pagePreview = await redactionClient.renderPage(source.value.path, page);
-      if (request === requestedPage) renderedPage.value = pagePreview;
+      await renderPage(page);
     } catch (error) {
-      if (request === requestedPage) errorCode.value = errorCodeFrom(error, "redactionFailed");
+      if (page === currentPage.value) errorCode.value = errorCodeFrom(error, "redactionFailed");
     } finally {
-      if (request === requestedPage) loadingPage.value = false;
+      if (page === currentPage.value) preloadNeighborPages();
     }
   }
 
   async function goToPage(page: number | null) {
     if (!source.value || page === null || !Number.isInteger(page)) return;
+    if (page < 1 || page > source.value.pageCount) return;
+    currentPage.value = page;
+    trimPageCache();
     await loadPage(page);
   }
 
@@ -319,13 +382,12 @@ export const useRedactionStore = defineStore("redaction", () => {
   }
 
   function resetPreparation() {
-    requestedPage += 1;
+    clearPagePreviews();
     source.value = null;
-    renderedPage.value = null;
+    currentPage.value = 1;
     selections.value = {};
     zones.value = {};
     nextZoneId = 1;
-    loadingPage.value = false;
     errorCode.value = null;
     outputName.value = "";
     destination.value = "";

@@ -26,7 +26,7 @@ export interface RedactionSource {
 export interface RedactionPage {
   page: number;
   aspectRatio: number;
-  pngDataUrl: string;
+  imageDataUrl: string;
   words: TextWord[];
 }
 

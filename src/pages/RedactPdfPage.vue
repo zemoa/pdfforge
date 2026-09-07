@@ -81,6 +81,7 @@ const displayedOutputName = computed(() => {
 const isZoneMode = computed(
   () => redaction.canDrawZones && (!redaction.hasSelectableText || selectionMode.value === "zone"),
 );
+const showSelectionMode = computed(() => redaction.hasSelectableText || redaction.loadingPage);
 
 onMounted(() => {
   viewerResizeObserver = new ResizeObserver(recalculatePageFit);
@@ -370,7 +371,7 @@ function finishZoneGesture(event: PointerEvent) {
         </NCard>
 
         <template v-else-if="redaction.source">
-          <NSpace v-if="redaction.hasSelectableText" align="center" class="selection-mode">
+          <NSpace v-if="showSelectionMode" align="center" class="selection-mode">
             <NText depth="3">{{ t("redaction.selectionMode") }}</NText>
             <NButton
               size="small"
@@ -396,7 +397,7 @@ function finishZoneGesture(event: PointerEvent) {
                     size="tiny"
                     class="viewer-control-button"
                     :aria-label="t('redaction.previousPage')"
-                    :disabled="!redaction.canGoPrevious || redaction.loadingPage"
+                    :disabled="!redaction.canGoPrevious"
                     @click="redaction.goToPreviousPage"
                   >
                     <LineIcon name="chevronLeft" :size="14" />
@@ -424,7 +425,7 @@ function finishZoneGesture(event: PointerEvent) {
                     size="tiny"
                     class="viewer-control-button"
                     :aria-label="t('redaction.nextPage')"
-                    :disabled="!redaction.canGoNext || redaction.loadingPage"
+                    :disabled="!redaction.canGoNext"
                     @click="redaction.goToNextPage"
                   >
                     <LineIcon name="chevronRight" :size="14" />
@@ -486,7 +487,7 @@ function finishZoneGesture(event: PointerEvent) {
             <NSpin :show="redaction.loadingPage">
               <div v-if="redaction.renderedPage" class="viewer-page" :style="viewerStyle">
                 <img
-                  :src="redaction.renderedPage.pngDataUrl"
+                  :src="redaction.renderedPage.imageDataUrl"
                   :alt="t('redaction.pagePreview', { page: redaction.currentPage })"
                 />
                 <template v-for="word in redaction.renderedPage.words" :key="word.index">

@@ -16,7 +16,7 @@ pub struct TextWord {
 pub struct RenderedPage {
     pub page: usize,
     pub aspect_ratio: f32,
-    pub png_data_url: String,
+    pub image_data_url: String,
     pub words: Vec<TextWord>,
 }
 

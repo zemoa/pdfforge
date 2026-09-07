@@ -139,7 +139,7 @@ pub struct TextWordDto {
 pub struct RedactionPageDto {
     page: usize,
     aspect_ratio: f32,
-    png_data_url: String,
+    image_data_url: String,
     words: Vec<TextWordDto>,
 }
 
@@ -193,7 +193,7 @@ pub fn render_redaction_page(
         .map(|page| RedactionPageDto {
             page: page.page,
             aspect_ratio: page.aspect_ratio,
-            png_data_url: page.png_data_url,
+            image_data_url: page.image_data_url,
             words: page
                 .words
                 .into_iter()
