@@ -151,6 +151,7 @@ export default {
     clearSelections: "Clear all selections",
     closeWhileRunning: "A redaction is in progress. Cancel it and close PDFForge?",
     confirm: "Confirm redaction",
+    currentPage: "Page number",
     destination: "Redacted PDF",
     destinationPath: "Destination folder",
     destinationPlaceholder: "Paste an existing folder path",
@@ -159,6 +160,7 @@ export default {
     emptySelections: "Select words or draw zones to prepare their redaction.",
     emptySource: "Add a PDF file to prepare redaction.",
     error: "Redaction failed",
+    fitPage: "Fit page",
     heading: "Redact a PDF",
     intro: "Select words or zones to remove permanently. Your PDF stays on this computer.",
     irreversibleWarning:
@@ -194,5 +196,7 @@ export default {
     zoneHint:
       "Drag on the page to draw a zone. Drag a zone to move it, or use its handles to resize it.",
     zoneSelection: "Page {page}: zone {zone}",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
   },
 } as const;

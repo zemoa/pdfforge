@@ -25,14 +25,9 @@ import {
 } from "./selection";
 import { defaultOutputName, sourceDirectory } from "./output";
 
-const MIN_ZOOM = 0.75;
-const MAX_ZOOM = 2;
-const ZOOM_STEP = 0.25;
-
 export const useRedactionStore = defineStore("redaction", () => {
   const source = ref<RedactionSource | null>(null);
   const renderedPage = ref<RedactionPage | null>(null);
-  const zoom = ref(1);
   const selections = ref<SelectionsByPage>({});
   const zones = ref<ZonesByPage>({});
   const loadingPage = ref(false);
@@ -150,7 +145,6 @@ export const useRedactionStore = defineStore("redaction", () => {
       selections.value = {};
       zones.value = {};
       nextZoneId = 1;
-      zoom.value = 1;
       outputName.value = defaultOutputName(nextSource.name);
       destination.value = sourceDirectory(nextSource.path);
       outputPreview.value = null;
@@ -192,18 +186,6 @@ export const useRedactionStore = defineStore("redaction", () => {
 
   async function goToNextPage() {
     await goToPage(currentPage.value + 1);
-  }
-
-  function zoomIn() {
-    zoom.value = Math.min(MAX_ZOOM, zoom.value + ZOOM_STEP);
-  }
-
-  function zoomOut() {
-    zoom.value = Math.max(MIN_ZOOM, zoom.value - ZOOM_STEP);
-  }
-
-  function resetZoom() {
-    zoom.value = 1;
   }
 
   function toggleTextWord(wordIndex: number) {
@@ -342,7 +324,6 @@ export const useRedactionStore = defineStore("redaction", () => {
     selections.value = {};
     zones.value = {};
     nextZoneId = 1;
-    zoom.value = 1;
     loadingPage.value = false;
     errorMessage.value = null;
     outputName.value = "";
@@ -368,7 +349,6 @@ export const useRedactionStore = defineStore("redaction", () => {
   return {
     source,
     renderedPage,
-    zoom,
     loadingPage,
     errorMessage,
     outputName,
@@ -395,9 +375,6 @@ export const useRedactionStore = defineStore("redaction", () => {
     goToPage,
     goToPreviousPage,
     goToNextPage,
-    zoomIn,
-    zoomOut,
-    resetZoom,
     toggleTextWord,
     selectTextWordRange,
     removeTextWord,

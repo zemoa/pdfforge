@@ -14,10 +14,12 @@ import {
   NSpace,
   NText,
   NThing,
+  NTooltip,
 } from "naive-ui";
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
+import LineIcon from "../components/LineIcon.vue";
 import ToolWorkspaceShell from "../components/ToolWorkspaceShell.vue";
 import {
   rectangleFromPoints,
@@ -33,6 +35,7 @@ const redaction = useRedactionStore();
 const dragAnchor = ref<number | null>(null);
 const dragEnd = ref<number | null>(null);
 const selectionsSidebarCollapsed = ref(false);
+const viewerScroll = ref<HTMLElement | null>(null);
 const viewerPage = ref<HTMLElement | null>(null);
 const draftZone = ref<NormalizedRect | null>(null);
 const zoneGesture = ref<ZoneGesture | null>(null);
@@ -53,10 +56,24 @@ type ZoneGesture =
 
 type SelectionMode = "text" | "zone";
 
+const MIN_ZOOM = 0.75;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.25;
+const VIEWER_GUTTER = 32;
+const fittedPageWidth = ref(0);
+const manualPageWidth = ref(0);
+const zoom = ref(1);
+const isFitMode = ref(true);
+let viewerResizeObserver: ResizeObserver | undefined;
+
 const viewerStyle = computed(() => ({
   aspectRatio: `${redaction.renderedPage?.aspectRatio ?? 1} / 1`,
-  width: `${redaction.zoom * 100}%`,
+  width: `${Math.max(
+    1,
+    (isFitMode.value ? fittedPageWidth.value : manualPageWidth.value) * zoom.value,
+  )}px`,
 }));
+const zoomPercentage = computed(() => Math.round(zoom.value * 100));
 const displayedOutputName = computed(() => {
   const outputName = redaction.outputName.trim() || t("redaction.outputPlaceholder");
   return outputName.toLowerCase().endsWith(".pdf") ? outputName : `${outputName}.pdf`;
@@ -66,11 +83,44 @@ const isZoneMode = computed(
 );
 
 onMounted(() => {
+  viewerResizeObserver = new ResizeObserver(recalculatePageFit);
+  if (viewerScroll.value) {
+    viewerResizeObserver.observe(viewerScroll.value);
+    recalculatePageFit();
+  }
   void redaction.initialize();
   void redaction.protectWindowClose(async () => window.confirm(t("redaction.closeWhileRunning")));
   window.addEventListener("pointermove", updateZoneGesture);
   window.addEventListener("pointerup", finishSelections);
 });
+
+watch(
+  viewerScroll,
+  (viewer, previousViewer) => {
+    if (previousViewer) viewerResizeObserver?.unobserve(previousViewer);
+    if (!viewer) return;
+    viewerResizeObserver?.observe(viewer);
+    void nextTick(recalculatePageFit);
+  },
+  { flush: "post" },
+);
+
+watch(
+  () => redaction.source?.path,
+  () => fitPage(),
+  { flush: "post" },
+);
+
+watch(
+  () => redaction.renderedPage?.aspectRatio,
+  () => {
+    void nextTick(() => {
+      recalculatePageFit();
+      if (!isFitMode.value) manualPageWidth.value = fittedPageWidth.value;
+    });
+  },
+  { flush: "post" },
+);
 
 watch(
   () => redaction.outcome,
@@ -84,10 +134,34 @@ async function openSummary() {
   if (await redaction.requestSummary()) showSummary.value = true;
 }
 onBeforeUnmount(() => {
+  viewerResizeObserver?.disconnect();
   window.removeEventListener("pointermove", updateZoneGesture);
   window.removeEventListener("pointerup", finishSelections);
   redaction.dispose();
 });
+
+function recalculatePageFit() {
+  const viewer = viewerScroll.value;
+  const aspectRatio = redaction.renderedPage?.aspectRatio;
+  if (!viewer || !aspectRatio) return;
+  const availableWidth = Math.max(0, viewer.clientWidth - VIEWER_GUTTER);
+  const availableHeight = Math.max(0, viewer.clientHeight - VIEWER_GUTTER);
+  fittedPageWidth.value = Math.min(availableWidth, availableHeight * aspectRatio);
+}
+
+function fitPage() {
+  isFitMode.value = true;
+  zoom.value = 1;
+  void nextTick(recalculatePageFit);
+}
+
+function changeZoom(direction: -1 | 1) {
+  if (isFitMode.value) {
+    manualPageWidth.value = fittedPageWidth.value;
+    isFitMode.value = false;
+  }
+  zoom.value = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom.value + direction * ZOOM_STEP));
+}
 
 function beginWordSelection(wordIndex: number) {
   dragAnchor.value = wordIndex;
@@ -313,7 +387,102 @@ function finishZoneGesture(event: PointerEvent) {
               {{ t("redaction.drawZoneMode") }}
             </NButton>
           </NSpace>
-          <div class="viewer-scroll">
+          <div class="viewer-controls" role="toolbar" :aria-label="t('redaction.viewer')">
+            <div class="viewer-control-group">
+              <NTooltip>
+                <template #trigger>
+                  <NButton
+                    quaternary
+                    size="tiny"
+                    class="viewer-control-button"
+                    :aria-label="t('redaction.previousPage')"
+                    :disabled="!redaction.canGoPrevious || redaction.loadingPage"
+                    @click="redaction.goToPreviousPage"
+                  >
+                    <LineIcon name="chevronLeft" :size="14" />
+                  </NButton>
+                </template>
+                {{ t("redaction.previousPage") }}
+              </NTooltip>
+              <NInputNumber
+                :value="redaction.currentPage"
+                :min="1"
+                :max="redaction.source.pageCount"
+                :show-button="false"
+                :aria-label="t('redaction.currentPage')"
+                size="small"
+                class="page-number"
+                @update:value="redaction.goToPage"
+              />
+              <NText depth="3" class="page-count">
+                {{ t("redaction.ofPages", { count: redaction.source.pageCount }) }}
+              </NText>
+              <NTooltip>
+                <template #trigger>
+                  <NButton
+                    quaternary
+                    size="tiny"
+                    class="viewer-control-button"
+                    :aria-label="t('redaction.nextPage')"
+                    :disabled="!redaction.canGoNext || redaction.loadingPage"
+                    @click="redaction.goToNextPage"
+                  >
+                    <LineIcon name="chevronRight" :size="14" />
+                  </NButton>
+                </template>
+                {{ t("redaction.nextPage") }}
+              </NTooltip>
+            </div>
+            <span class="viewer-controls-divider" />
+            <div class="viewer-control-group">
+              <NTooltip>
+                <template #trigger>
+                  <NButton
+                    quaternary
+                    size="tiny"
+                    class="viewer-control-button"
+                    :aria-label="t('redaction.zoomOut')"
+                    :disabled="zoom <= MIN_ZOOM"
+                    @click="changeZoom(-1)"
+                  >
+                    −
+                  </NButton>
+                </template>
+                {{ t("redaction.zoomOut") }}
+              </NTooltip>
+              <NTooltip>
+                <template #trigger>
+                  <NButton
+                    quaternary
+                    size="tiny"
+                    class="fit-page-button"
+                    :class="{ 'fit-page-button--active': isFitMode }"
+                    :aria-label="t('redaction.fitPage')"
+                    @click="fitPage"
+                  >
+                    {{ zoomPercentage }}%
+                  </NButton>
+                </template>
+                {{ t("redaction.fitPage") }}
+              </NTooltip>
+              <NTooltip>
+                <template #trigger>
+                  <NButton
+                    quaternary
+                    size="tiny"
+                    class="viewer-control-button"
+                    :aria-label="t('redaction.zoomIn')"
+                    :disabled="zoom >= MAX_ZOOM"
+                    @click="changeZoom(1)"
+                  >
+                    +
+                  </NButton>
+                </template>
+                {{ t("redaction.zoomIn") }}
+              </NTooltip>
+            </div>
+          </div>
+          <div ref="viewerScroll" class="viewer-scroll">
             <NSpin :show="redaction.loadingPage">
               <div v-if="redaction.renderedPage" class="viewer-page" :style="viewerStyle">
                 <img
@@ -437,59 +606,6 @@ function finishZoneGesture(event: PointerEvent) {
         </NCard>
 
         <template v-if="redaction.source">
-          <NCard size="small" embedded :title="t('redaction.viewer')">
-            <NSpace align="center" justify="center">
-              <NButton
-                :disabled="
-                  redaction.phase === 'running' || !redaction.canGoPrevious || redaction.loadingPage
-                "
-                @click="redaction.goToPreviousPage"
-              >
-                {{ t("redaction.previousPage") }}
-              </NButton>
-              <NInputNumber
-                :value="redaction.currentPage"
-                :min="1"
-                :max="redaction.source.pageCount"
-                :show-button="false"
-                :disabled="redaction.phase === 'running'"
-                class="page-number"
-                @update:value="redaction.goToPage"
-              />
-              <NButton
-                :disabled="
-                  redaction.phase === 'running' || !redaction.canGoNext || redaction.loadingPage
-                "
-                @click="redaction.goToNextPage"
-              >
-                {{ t("redaction.nextPage") }}
-              </NButton>
-            </NSpace>
-            <NText depth="3" class="page-count">{{
-              t("redaction.ofPages", { count: redaction.source.pageCount })
-            }}</NText>
-            <NSpace align="center" justify="center" class="zoom-controls">
-              <NButton
-                size="small"
-                :disabled="redaction.phase === 'running' || redaction.zoom <= 0.75"
-                @click="redaction.zoomOut"
-                >−</NButton
-              >
-              <NButton
-                size="small"
-                :disabled="redaction.phase === 'running'"
-                @click="redaction.resetZoom"
-                >{{ Math.round(redaction.zoom * 100) }}%</NButton
-              >
-              <NButton
-                size="small"
-                :disabled="redaction.phase === 'running' || redaction.zoom >= 2"
-                @click="redaction.zoomIn"
-                >+</NButton
-              >
-            </NSpace>
-          </NCard>
-
           <NCard size="small" embedded :title="t('redaction.destination')">
             <label>
               {{ t("redaction.outputName") }}
@@ -621,32 +737,82 @@ function finishZoneGesture(event: PointerEvent) {
 }
 
 .page-number {
-  width: 4.5rem;
+  width: 3.25rem;
+}
+
+.viewer-controls {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  justify-content: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.viewer-control-group {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.15rem;
+}
+
+.viewer-control-button {
+  font-size: 0.875rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  padding: 0;
+  width: 1.75rem;
+}
+
+.fit-page-button {
+  font-size: 0.6875rem;
+  height: 1.75rem;
+  min-width: 3rem;
+  padding: 0 0.35rem;
+}
+
+.fit-page-button--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.viewer-controls-divider {
+  background: var(--border);
+  height: 1.1rem;
+  width: 1px;
+}
+
+.page-count {
+  font-size: 0.6875rem;
 }
 
 .viewer-scroll {
-  align-items: flex-start;
   background: color-mix(in srgb, var(--surface-secondary) 88%, #b8b8b8);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-panel);
-  display: flex;
+  box-sizing: border-box;
+  display: block;
   flex: 1;
-  justify-content: center;
   min-height: 0;
   overflow: auto;
+  padding: 1rem;
 }
 
 .viewer-page {
   box-shadow: 0 12px 28px rgb(0 0 0 / 8%);
-  margin: 1.25rem auto;
+  margin: 0 auto;
   position: relative;
 }
 
 .viewer-page img {
   border: 1px solid #d8d8d8;
   border-radius: 2px;
+  box-sizing: border-box;
   display: block;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
   user-select: none;
   width: 100%;
 }
@@ -748,16 +914,6 @@ function finishZoneGesture(event: PointerEvent) {
 
 .clear-selections {
   margin-top: 0.75rem;
-}
-
-.page-count {
-  display: block;
-  margin-top: 0.5rem;
-  text-align: center;
-}
-
-.zoom-controls {
-  margin-top: 1rem;
 }
 
 .footer-copy {

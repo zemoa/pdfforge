@@ -155,6 +155,7 @@ export default {
     clearSelections: "Effacer toutes les sélections",
     closeWhileRunning: "Un masquage est en cours. L’annuler et fermer PDFForge ?",
     confirm: "Confirmer le masquage",
+    currentPage: "Numéro de page",
     destination: "PDF masqué",
     destinationPath: "Dossier de destination",
     destinationPlaceholder: "Collez le chemin d’un dossier existant",
@@ -163,6 +164,7 @@ export default {
     emptySelections: "Sélectionnez des mots ou dessinez des zones pour préparer leur masquage.",
     emptySource: "Ajoutez un PDF pour préparer un masquage.",
     error: "Le masquage a échoué",
+    fitPage: "Ajuster à la page",
     heading: "Masquer des informations dans un PDF",
     intro:
       "Sélectionnez les mots ou les zones à supprimer définitivement. Votre PDF reste sur cet ordinateur.",
@@ -200,5 +202,7 @@ export default {
     zoneHint:
       "Faites glisser la souris sur la page pour dessiner une zone. Faites glisser une zone pour la déplacer ou utilisez ses poignées pour la redimensionner.",
     zoneSelection: "Page {page} : zone {zone}",
+    zoomIn: "Zoom avant",
+    zoomOut: "Zoom arrière",
   },
 } as const;
