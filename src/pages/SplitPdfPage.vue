@@ -144,8 +144,8 @@ function selectMode(mode: string | number) {
         </div></template
       >
       <template v-else>
-        <NAlert v-if="split.errorMessage" type="error" :title="t('split.error')">{{
-          split.errorMessage
+        <NAlert v-if="split.errorCode" type="error" :title="t('split.error')">{{
+          t(`errors.${split.errorCode}`)
         }}</NAlert>
         <NAlert v-if="split.outcome === 'succeeded'" type="success" :title="t('split.success')">{{
           t("split.successBody")

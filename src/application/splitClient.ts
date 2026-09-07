@@ -1,7 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
+import { errorCodeFrom, invokeCommand, type ErrorCode } from "./error";
 
 export type SplitMode = "eachPage" | "extract" | "groups";
 
@@ -25,7 +26,7 @@ export type SplitEvent =
   | { type: "progress"; current: number; total: number; percent: number }
   | { type: "succeeded"; outputPaths: string[]; opened: boolean }
   | { type: "cancelled" }
-  | { type: "failed"; message: string };
+  | { type: "failed"; error: ErrorCode };
 
 export const splitClient = {
   async pickPdfFile(): Promise<string | null> {
@@ -37,10 +38,14 @@ export const splitClient = {
     return typeof result === "string" ? result : null;
   },
   inspectSource(paths: string[]) {
-    return invoke<SplitSource>("inspect_split_source", { paths });
+    return invokeCommand<SplitSource>("inspect_split_source", { paths }, "splitFailed");
   },
   renderThumbnails(sourcePath: string, pages: number[]) {
-    return invoke<Thumbnail[]>("render_split_thumbnails", { sourcePath, pages });
+    return invokeCommand<Thumbnail[]>(
+      "render_split_thumbnails",
+      { sourcePath, pages },
+      "splitFailed",
+    );
   },
   previewOutput(
     sourcePath: string,
@@ -50,14 +55,18 @@ export const splitClient = {
     directory: string,
     fileName: string,
   ) {
-    return invoke<OutputPreview>("preview_split_output", {
-      sourcePath,
-      mode,
-      pages,
-      groups,
-      directory,
-      fileName,
-    });
+    return invokeCommand<OutputPreview>(
+      "preview_split_output",
+      {
+        sourcePath,
+        mode,
+        pages,
+        groups,
+        directory,
+        fileName,
+      },
+      "splitFailed",
+    );
   },
   start(
     sourcePath: string,
@@ -67,15 +76,26 @@ export const splitClient = {
     directory: string,
     fileName: string,
   ) {
-    return invoke<void>("start_split", {
-      request: { sourcePath, mode, pages, groups, directory, fileName },
-    });
+    return invokeCommand<void>(
+      "start_split",
+      {
+        request: { sourcePath, mode, pages, groups, directory, fileName },
+      },
+      "splitFailed",
+    );
   },
   cancel() {
-    return invoke<void>("cancel_split");
+    return invokeCommand<void>("cancel_split", undefined, "splitFailed");
   },
   onSplitEvent(callback: (event: SplitEvent) => void): Promise<UnlistenFn> {
-    return listen<SplitEvent>("split-event", (event) => callback(event.payload));
+    return listen<SplitEvent>("split-event", (event) => {
+      const payload = event.payload;
+      callback(
+        payload.type === "failed"
+          ? { type: "failed", error: errorCodeFrom(payload.error, "splitFailed") }
+          : payload,
+      );
+    });
   },
   async onFileDrop(callback: (paths: string[]) => void): Promise<UnlistenFn> {
     return getCurrentWindow().onDragDropEvent((event) => {

@@ -155,6 +155,16 @@ the process exits. When the running location cannot be written, the verified
 asset is saved in Downloads for manual replacement. No check, download,
 installation, retry, or telemetry runs automatically.
 
+### Localized IPC errors (2026-09-07)
+
+Every user-visible command failure crosses IPC as a stable serialized error code,
+never as a backend, filesystem, PDF-engine or network message. The typed
+frontend clients validate those codes and map malformed or future failures to a
+domain-specific fallback. Domain stores retain only the code; pages translate it
+through the active locale. This keeps technical details internal while ensuring
+that both immediate command rejections and asynchronous operation events are
+localized consistently.
+
 ## Dependency and quality policy
 
 Direct JavaScript dependencies are exact versions in `package.json`; `pnpm-lock.yaml` is committed and authoritative. Rust resolves compatible current Tauri 2 crates into committed `Cargo.lock`. TypeScript is pinned to the latest version supported by `typescript-eslint` (currently 6.0.3), rather than an incompatible newer compiler. Upgrade deliberately, regenerate locks, run the full checks, and record a material architectural change here.

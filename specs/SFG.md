@@ -68,6 +68,7 @@ scinder des fichiers PDF de manière simple et rapide.
 | F-46      | L'application doit conserver une seule version antérieure afin que l'utilisateur puisse la restaurer ; une restauration redémarre l'ancienne version et supprime la version abandonnée.                                   |
 | F-47      | L'utilisateur doit pouvoir redimensionner manuellement la fenêtre depuis chacun de ses côtés et de ses coins, jusqu'à une taille minimale de 640 × 480 pixels.                                                            |
 | F-48      | Dans l'univers Masquage, les contrôles du PDF doivent tenir sur une ligne dans la zone principale. La page est entièrement visible par défaut et reste ajustée aux redimensionnements jusqu'à un zoom manuel.             |
+| F-49      | Tout message d'erreur affiché à l'utilisateur doit être rédigé dans la langue active de l'application et ne doit pas exposer de détail technique brut.                                                                    |
 
 ## Exigences d'usage confirmées
 

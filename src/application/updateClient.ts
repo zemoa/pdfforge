@@ -1,5 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+
+import { errorCodeFrom, invokeCommand, type ErrorCode } from "./error";
 
 export interface UpdateStatus {
   installedVersion: string;
@@ -17,25 +18,32 @@ export type UpdateEvent =
   | { type: "progress"; downloaded: number; total: number | null }
   | { type: "cancelled" }
   | { type: "manualDownload"; version: string }
-  | { type: "failed"; message: string };
+  | { type: "failed"; error: ErrorCode };
 
 export const updateClient = {
   status() {
-    return invoke<UpdateStatus>("update_status");
+    return invokeCommand<UpdateStatus>("update_status", undefined, "updateInstallFailed");
   },
   check(locale: string) {
-    return invoke<UpdateCheck>("check_for_update", { locale });
+    return invokeCommand<UpdateCheck>("check_for_update", { locale }, "updateCheckFailed");
   },
   start() {
-    return invoke<void>("start_update");
+    return invokeCommand<void>("start_update", undefined, "updateInstallFailed");
   },
   cancel() {
-    return invoke<void>("cancel_update");
+    return invokeCommand<void>("cancel_update", undefined, "updateInstallFailed");
   },
   restore() {
-    return invoke<void>("restore_previous_update");
+    return invokeCommand<void>("restore_previous_update", undefined, "updateRestoreFailed");
   },
   onUpdateEvent(callback: (event: UpdateEvent) => void): Promise<UnlistenFn> {
-    return listen<UpdateEvent>("update-event", (event) => callback(event.payload));
+    return listen<UpdateEvent>("update-event", (event) => {
+      const payload = event.payload;
+      callback(
+        payload.type === "failed"
+          ? { type: "failed", error: errorCodeFrom(payload.error, "updateInstallFailed") }
+          : payload,
+      );
+    });
   },
 };

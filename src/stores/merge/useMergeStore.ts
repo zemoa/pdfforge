@@ -8,6 +8,7 @@ import {
   type MergeSource,
   type OutputPreview,
 } from "../../application/mergeClient";
+import { errorCodeFrom, type ErrorCode } from "../../application/error";
 
 export const useMergeStore = defineStore("merge", () => {
   const sources = ref<MergeSource[]>([]);
@@ -16,7 +17,7 @@ export const useMergeStore = defineStore("merge", () => {
   const outputName = ref("");
   const destination = ref("");
   const outputPreview = ref<OutputPreview | null>(null);
-  const errorMessage = ref<string | null>(null);
+  const errorCode = ref<ErrorCode | null>(null);
   const phase = ref<"preparing" | "running">("preparing");
   const progress = ref({ current: 0, total: 0, percent: 0 });
   let unlisten: (() => void) | undefined;
@@ -38,7 +39,7 @@ export const useMergeStore = defineStore("merge", () => {
     unlisten ??= await mergeClient.onMergeEvent((event) => {
       if (event.type === "progress") progress.value = event;
       if (event.type === "failed") {
-        errorMessage.value = event.message;
+        errorCode.value = event.error;
         phase.value = "preparing";
       }
       if (event.type === "cancelled") resetPreparation();
@@ -60,7 +61,7 @@ export const useMergeStore = defineStore("merge", () => {
 
   async function addSelectedPaths(paths: string[]) {
     if (paths.length === 0 || phase.value === "running") return;
-    errorMessage.value = null;
+    errorCode.value = null;
     const inspection = await mergeClient.inspectSources(paths);
     ignoredNonPdfs.value = inspection.ignoredNonPdfs;
     if (inspection.incidents.length > 0) {
@@ -139,11 +140,11 @@ export const useMergeStore = defineStore("merge", () => {
   async function requestSummary() {
     if (!canRequestSummary.value) return null;
     try {
-      errorMessage.value = null;
+      errorCode.value = null;
       outputPreview.value = await mergeClient.previewOutput(destination.value, outputName.value);
       return outputPreview.value;
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "mergeFailed");
       return null;
     }
   }
@@ -159,7 +160,7 @@ export const useMergeStore = defineStore("merge", () => {
         outputName.value,
       );
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "mergeFailed");
       phase.value = "preparing";
     }
   }
@@ -195,7 +196,7 @@ export const useMergeStore = defineStore("merge", () => {
     outputName,
     destination,
     outputPreview,
-    errorMessage,
+    errorCode,
     phase,
     progress,
     warnings,

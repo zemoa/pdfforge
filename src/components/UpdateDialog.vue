@@ -26,8 +26,8 @@ watch(show, (opened) => {
     <NAlert v-if="update.updatedTo" type="success" :title="t('update.updated')">
       {{ t("update.updatedBody", { version: update.updatedTo }) }}
     </NAlert>
-    <NAlert v-if="update.errorMessage" type="error" :title="t('update.error')">
-      {{ update.errorMessage }}
+    <NAlert v-if="update.errorCode" type="error" :title="t('update.error')">
+      {{ t(`errors.${update.errorCode}`) }}
     </NAlert>
     <NAlert v-if="update.manualDownloadVersion" type="info" :title="t('update.manualTitle')">
       {{ t("update.manualBody", { version: update.manualDownloadVersion }) }}

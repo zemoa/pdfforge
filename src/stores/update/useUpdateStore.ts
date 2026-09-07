@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 
 import { type UpdateCheck, updateClient } from "../../application/updateClient";
+import { errorCodeFrom, type ErrorCode } from "../../application/error";
 
 export const useUpdateStore = defineStore("update", () => {
   const installedVersion = ref("");
@@ -10,7 +11,7 @@ export const useUpdateStore = defineStore("update", () => {
   const result = ref<UpdateCheck | null>(null);
   const phase = ref<"idle" | "checking" | "downloading">("idle");
   const progress = ref({ downloaded: 0, total: null as number | null });
-  const errorMessage = ref<string | null>(null);
+  const errorCode = ref<ErrorCode | null>(null);
   const manualDownloadVersion = ref<string | null>(null);
   let unlisten: (() => void) | undefined;
 
@@ -25,8 +26,7 @@ export const useUpdateStore = defineStore("update", () => {
     installedVersion.value = status.installedVersion;
     rollbackAvailable.value = status.rollbackAvailable;
     updatedTo.value = status.updatedTo;
-    if (status.installationError)
-      errorMessage.value = "The update could not be installed. Try again.";
+    if (status.installationError) errorCode.value = "updateInstallFailed";
     unlisten ??= await updateClient.onUpdateEvent((event) => {
       if (event.type === "progress") {
         progress.value = { downloaded: event.downloaded, total: event.total };
@@ -40,7 +40,7 @@ export const useUpdateStore = defineStore("update", () => {
       }
       if (event.type === "failed") {
         phase.value = "idle";
-        errorMessage.value = event.message;
+        errorCode.value = event.error;
       }
     });
   }
@@ -48,12 +48,12 @@ export const useUpdateStore = defineStore("update", () => {
   async function check(locale: string) {
     if (phase.value !== "idle") return;
     phase.value = "checking";
-    errorMessage.value = null;
+    errorCode.value = null;
     manualDownloadVersion.value = null;
     try {
       result.value = await updateClient.check(locale);
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "updateCheckFailed");
     } finally {
       phase.value = "idle";
     }
@@ -61,7 +61,7 @@ export const useUpdateStore = defineStore("update", () => {
 
   async function install() {
     if (phase.value !== "idle" || result.value?.kind !== "available") return;
-    errorMessage.value = null;
+    errorCode.value = null;
     manualDownloadVersion.value = null;
     progress.value = { downloaded: 0, total: null };
     try {
@@ -69,7 +69,7 @@ export const useUpdateStore = defineStore("update", () => {
       await updateClient.start();
     } catch (error) {
       phase.value = "idle";
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "updateInstallFailed");
     }
   }
 
@@ -79,11 +79,11 @@ export const useUpdateStore = defineStore("update", () => {
 
   async function restore() {
     if (phase.value !== "idle" || !rollbackAvailable.value) return;
-    errorMessage.value = null;
+    errorCode.value = null;
     try {
       await updateClient.restore();
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "updateRestoreFailed");
     }
   }
 
@@ -100,7 +100,7 @@ export const useUpdateStore = defineStore("update", () => {
     phase,
     progress,
     progressPercent,
-    errorMessage,
+    errorCode,
     manualDownloadVersion,
     initialize,
     check,

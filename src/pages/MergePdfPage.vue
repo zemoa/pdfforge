@@ -141,8 +141,8 @@ function dropSource(index: number) {
         </div>
       </template>
       <template v-else>
-        <NAlert v-if="merge.errorMessage" type="error" :title="t('merge.error')">{{
-          merge.errorMessage
+        <NAlert v-if="merge.errorCode" type="error" :title="t('merge.error')">{{
+          t(`errors.${merge.errorCode}`)
         }}</NAlert>
         <NAlert v-if="merge.ignoredNonPdfs.length" type="warning" :title="t('merge.ignored')">{{
           merge.ignoredNonPdfs.join(", ")

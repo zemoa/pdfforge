@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_opener::OpenerExt;
 
+use crate::error::{CommandError, CommandResult, ErrorCode};
+
 use super::{
     application::{execute_split, OutputReservation, SourceInspector, ThumbnailRenderer},
     domain::{OutputSpec, PageSelection, SourceIncident, SplitPlan, SplitValidationError},
@@ -120,15 +122,15 @@ enum SplitEventDto {
     },
     Cancelled,
     Failed {
-        message: String,
+        error: ErrorCode,
     },
 }
 
 #[tauri::command]
-pub fn inspect_split_source(paths: Vec<String>) -> Result<SplitSourceDto, String> {
+pub fn inspect_split_source(paths: Vec<String>) -> CommandResult<SplitSourceDto> {
     let source = LocalSourceInspector
         .inspect(&paths.into_iter().map(PathBuf::from).collect::<Vec<_>>())
-        .map_err(source_incident_message)?;
+        .map_err(source_incident_code)?;
     Ok(SplitSourceDto {
         path: source.path.display().to_string(),
         name: source.name,
@@ -142,12 +144,13 @@ pub fn render_split_thumbnails(
     runtime: State<'_, SplitRuntime>,
     source_path: String,
     pages: Vec<usize>,
-) -> Result<Vec<ThumbnailDto>, String> {
+) -> CommandResult<Vec<ThumbnailDto>> {
     let source = LocalSourceInspector
         .inspect(&[PathBuf::from(source_path)])
-        .map_err(source_incident_message)?;
+        .map_err(source_incident_code)?;
     runtime
-        .pdfium(&app)?
+        .pdfium(&app)
+        .map_err(|_| CommandError::new(ErrorCode::RendererUnavailable))?
         .render(&source.path, &pages)
         .map(|thumbnails| {
             thumbnails
@@ -158,6 +161,7 @@ pub fn render_split_thumbnails(
                 })
                 .collect()
         })
+        .map_err(|_| CommandError::new(ErrorCode::RendererUnavailable))
 }
 
 #[tauri::command]
@@ -168,13 +172,14 @@ pub fn preview_split_output(
     groups: Vec<Vec<usize>>,
     directory: String,
     file_name: String,
-) -> Result<OutputPreviewDto, String> {
+) -> CommandResult<OutputPreviewDto> {
     let source = inspect_source_path(&source_path)?;
     let plan = split_plan(&mode, pages, groups, source.page_count)?;
-    let output =
-        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_message)?;
+    let output = OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_code)?;
     let outputs = plan.outputs(source.page_count);
-    let paths = LocalOutputReservation.preview(&output, outputs.len())?;
+    let paths = LocalOutputReservation
+        .preview(&output, outputs.len())
+        .map_err(|error| CommandError::new(output_error_code(&error)))?;
     Ok(OutputPreviewDto {
         output_paths: paths
             .into_iter()
@@ -189,7 +194,7 @@ pub fn start_split(
     app: AppHandle,
     runtime: State<'_, SplitRuntime>,
     request: SplitRequest,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     let SplitRequest {
         source_path,
         mode,
@@ -200,16 +205,17 @@ pub fn start_split(
     } = request;
     let source = inspect_source_path(&source_path)?;
     let plan = split_plan(&mode, pages, groups, source.page_count)?;
-    let output =
-        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_message)?;
+    let output = OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_code)?;
     let selections = plan.outputs(source.page_count);
     let runtime = runtime.inner().clone();
-    let cancelled = runtime.begin()?;
+    let cancelled = runtime
+        .begin()
+        .map_err(|_| CommandError::new(ErrorCode::OperationInProgress))?;
     let renderer = match runtime.pdfium(&app) {
         Ok(renderer) => renderer,
-        Err(error) => {
+        Err(_) => {
             runtime.finish();
-            return Err(error);
+            return Err(CommandError::new(ErrorCode::RendererUnavailable));
         }
     };
     tauri::async_runtime::spawn_blocking(move || {
@@ -257,7 +263,9 @@ pub fn start_split(
                 }
             }
             Err(_) if cancelled.load(Ordering::Relaxed) => SplitEventDto::Cancelled,
-            Err(message) => SplitEventDto::Failed { message },
+            Err(_) => SplitEventDto::Failed {
+                error: ErrorCode::SplitFailed,
+            },
         };
         let _ = app.emit(SPLIT_EVENT, event);
         runtime.finish();
@@ -266,14 +274,16 @@ pub fn start_split(
 }
 
 #[tauri::command]
-pub fn cancel_split(runtime: State<'_, SplitRuntime>) -> Result<(), String> {
-    runtime.cancel()
+pub fn cancel_split(runtime: State<'_, SplitRuntime>) -> CommandResult<()> {
+    runtime
+        .cancel()
+        .map_err(|_| CommandError::new(ErrorCode::Unexpected))
 }
 
-fn inspect_source_path(path: &str) -> Result<super::domain::SourcePdf, String> {
+fn inspect_source_path(path: &str) -> CommandResult<super::domain::SourcePdf> {
     LocalSourceInspector
         .inspect(&[PathBuf::from(path)])
-        .map_err(source_incident_message)
+        .map_err(source_incident_code)
 }
 
 fn split_plan(
@@ -281,40 +291,46 @@ fn split_plan(
     pages: Vec<usize>,
     groups: Vec<Vec<usize>>,
     page_count: usize,
-) -> Result<SplitPlan, String> {
+) -> CommandResult<SplitPlan> {
     match mode {
         "eachPage" => Ok(SplitPlan::EachPage),
         "extract" => PageSelection::new(pages, page_count)
             .map(SplitPlan::Extract)
-            .map_err(validation_message),
-        "groups" => SplitPlan::groups(groups, page_count).map_err(validation_message),
-        _ => Err("The split mode is invalid.".to_owned()),
+            .map_err(validation_code),
+        "groups" => SplitPlan::groups(groups, page_count).map_err(validation_code),
+        _ => Err(CommandError::new(ErrorCode::SplitFailed)),
     }
 }
 
-fn source_incident_message(incident: SourceIncident) -> String {
+fn source_incident_code(incident: SourceIncident) -> CommandError {
     match incident {
-        SourceIncident::NotPdf => "Choose a PDF file.".to_owned(),
-        SourceIncident::PasswordProtected => "This PDF is password protected.".to_owned(),
-        SourceIncident::Unreadable => "This PDF cannot be read.".to_owned(),
-        SourceIncident::Inaccessible => "This PDF is inaccessible.".to_owned(),
-        SourceIncident::MultipleSources => "Choose exactly one PDF file.".to_owned(),
-        SourceIncident::EmptyDocument => "This PDF contains no pages.".to_owned(),
+        SourceIncident::NotPdf => CommandError::new(ErrorCode::SourceNotPdf),
+        SourceIncident::PasswordProtected => CommandError::new(ErrorCode::SourcePasswordProtected),
+        SourceIncident::Unreadable => CommandError::new(ErrorCode::SourceUnreadable),
+        SourceIncident::Inaccessible => CommandError::new(ErrorCode::SourceInaccessible),
+        SourceIncident::MultipleSources => CommandError::new(ErrorCode::SourceMultiple),
+        SourceIncident::EmptyDocument => CommandError::new(ErrorCode::SourceEmpty),
     }
 }
 
-fn validation_message(error: SplitValidationError) -> String {
+fn validation_code(error: SplitValidationError) -> CommandError {
     match error {
-        SplitValidationError::EmptySelection => "Select at least one page.".to_owned(),
-        SplitValidationError::PageOutOfBounds => "A selected page does not exist.".to_owned(),
-        SplitValidationError::EmptyGroups => "Create at least one page group.".to_owned(),
-        SplitValidationError::OverlappingGroups => {
-            "A page cannot belong to more than one group.".to_owned()
-        }
-        SplitValidationError::EmptyOutputName => "The output name is required.".to_owned(),
+        SplitValidationError::EmptySelection => CommandError::new(ErrorCode::SelectionRequired),
+        SplitValidationError::PageOutOfBounds => CommandError::new(ErrorCode::PageUnavailable),
+        SplitValidationError::EmptyGroups => CommandError::new(ErrorCode::GroupsRequired),
+        SplitValidationError::OverlappingGroups => CommandError::new(ErrorCode::GroupsOverlap),
+        SplitValidationError::EmptyOutputName => CommandError::new(ErrorCode::OutputNameRequired),
         SplitValidationError::DirectoryDoesNotExist => {
-            "The destination folder does not exist.".to_owned()
+            CommandError::new(ErrorCode::DestinationMissing)
         }
+    }
+}
+
+fn output_error_code(error: &str) -> ErrorCode {
+    match error {
+        "The destination folder does not exist." => ErrorCode::DestinationMissing,
+        "The destination folder is not writable." => ErrorCode::DestinationNotWritable,
+        _ => ErrorCode::SplitFailed,
     }
 }
 

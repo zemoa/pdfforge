@@ -10,6 +10,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_opener::OpenerExt;
 
+use crate::error::{CommandError, CommandResult, ErrorCode};
+
 use super::{
     application::{collect_warnings, OutputReservation, PdfMergeEngine, SourceInspector},
     domain::{InteractiveWarning, OutputSpec, SourceIncident, SourcePdf},
@@ -115,7 +117,7 @@ enum MergeEventDto {
     },
     Cancelled,
     Failed {
-        message: String,
+        error: ErrorCode,
     },
 }
 
@@ -143,10 +145,12 @@ pub fn inspect_merge_sources(paths: Vec<String>) -> InspectionDto {
 pub fn preview_merge_output(
     directory: String,
     file_name: String,
-) -> Result<OutputPreviewDto, String> {
+) -> CommandResult<OutputPreviewDto> {
     let output =
-        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(output_validation_message)?;
-    let path = LocalOutputReservation.preview(&output)?;
+        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(output_validation_code)?;
+    let path = LocalOutputReservation
+        .preview(&output)
+        .map_err(|error| CommandError::new(output_error_code(&error)))?;
     Ok(OutputPreviewDto {
         output_path: path.display().to_string(),
         normalized_name: output.file_name,
@@ -160,26 +164,26 @@ pub fn start_merge(
     source_paths: Vec<String>,
     directory: String,
     file_name: String,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     let inspection =
         LocalSourceInspector.inspect(&source_paths.iter().map(PathBuf::from).collect::<Vec<_>>());
     if inspection.accepted.len() != source_paths.len() || !inspection.incidents.is_empty() {
-        return Err(
-            "A source PDF is no longer available. Please review the preparation.".to_owned(),
-        );
+        return Err(CommandError::new(ErrorCode::PreparationChanged));
     }
     if inspection.accepted.len() < 2 {
-        return Err("At least two valid PDF files are required.".to_owned());
+        return Err(CommandError::new(ErrorCode::MergeSourcesRequired));
     }
     let output =
-        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(output_validation_message)?;
+        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(output_validation_code)?;
     let runtime = runtime.inner().clone();
-    let cancelled = runtime.begin()?;
+    let cancelled = runtime
+        .begin()
+        .map_err(|_| CommandError::new(ErrorCode::OperationInProgress))?;
     let output_path = match LocalOutputReservation.reserve(&output) {
         Ok(path) => path,
         Err(error) => {
             runtime.finish();
-            return Err(error);
+            return Err(CommandError::new(output_error_code(&error)));
         }
     };
     tauri::async_runtime::spawn_blocking(move || {
@@ -220,9 +224,11 @@ pub fn start_merge(
                 LocalOutputReservation.remove(&output_path);
                 MergeEventDto::Cancelled
             }
-            Err(message) => {
+            Err(_) => {
                 LocalOutputReservation.remove(&output_path);
-                MergeEventDto::Failed { message }
+                MergeEventDto::Failed {
+                    error: ErrorCode::MergeFailed,
+                }
             }
         };
         let _ = app.emit(MERGE_EVENT, event);
@@ -232,8 +238,10 @@ pub fn start_merge(
 }
 
 #[tauri::command]
-pub fn cancel_merge(runtime: State<'_, MergeRuntime>) -> Result<(), String> {
-    runtime.cancel()
+pub fn cancel_merge(runtime: State<'_, MergeRuntime>) -> CommandResult<()> {
+    runtime
+        .cancel()
+        .map_err(|_| CommandError::new(ErrorCode::Unexpected))
 }
 
 fn source_dto(source: &SourcePdf) -> SourcePdfDto {
@@ -274,13 +282,39 @@ fn warning_dto(warning: InteractiveWarning) -> InteractiveWarningDto {
     }
 }
 
-fn output_validation_message(error: super::domain::OutputValidationError) -> String {
+fn output_validation_code(error: super::domain::OutputValidationError) -> CommandError {
     match error {
         super::domain::OutputValidationError::EmptyName => {
-            "The output name is required.".to_owned()
+            CommandError::new(ErrorCode::OutputNameRequired)
         }
         super::domain::OutputValidationError::DirectoryDoesNotExist => {
-            "The destination folder does not exist.".to_owned()
+            CommandError::new(ErrorCode::DestinationMissing)
         }
+    }
+}
+
+fn output_error_code(error: &str) -> ErrorCode {
+    match error {
+        "The destination folder does not exist." => ErrorCode::DestinationMissing,
+        "The destination folder is not writable." => ErrorCode::DestinationNotWritable,
+        _ => ErrorCode::MergeFailed,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{output_error_code, output_validation_code};
+    use crate::{error::ErrorCode, merge::domain::OutputValidationError};
+
+    #[test]
+    fn maps_output_failures_without_exposing_the_backend_message() {
+        assert_eq!(
+            output_validation_code(OutputValidationError::DirectoryDoesNotExist).code,
+            ErrorCode::DestinationMissing
+        );
+        assert_eq!(
+            output_error_code("unexpected filesystem failure"),
+            ErrorCode::MergeFailed
+        );
     }
 }

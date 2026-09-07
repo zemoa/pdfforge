@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_opener::OpenerExt;
 
+use crate::error::{CommandError, CommandResult, ErrorCode};
+
 use super::{
     application::{apply_redaction, OutputReservation, PageRenderer, SourceInspector},
     domain::{NormalizedRect, OutputSpec, RedactionPlan, RedactionValidationError, SourceIncident},
@@ -155,15 +157,15 @@ enum RedactionEventDto {
     },
     Cancelled,
     Failed {
-        message: String,
+        error: ErrorCode,
     },
 }
 
 #[tauri::command]
-pub fn inspect_redaction_source(paths: Vec<String>) -> Result<RedactionSourceDto, String> {
+pub fn inspect_redaction_source(paths: Vec<String>) -> CommandResult<RedactionSourceDto> {
     let source = LocalSourceInspector
         .inspect(&paths.into_iter().map(PathBuf::from).collect::<Vec<_>>())
-        .map_err(source_incident_message)?;
+        .map_err(source_incident_code)?;
     Ok(RedactionSourceDto {
         path: source.path.display().to_string(),
         name: source.name,
@@ -177,15 +179,16 @@ pub fn render_redaction_page(
     runtime: State<'_, RedactionRuntime>,
     source_path: String,
     page: usize,
-) -> Result<RedactionPageDto, String> {
+) -> CommandResult<RedactionPageDto> {
     let source = LocalSourceInspector
         .inspect(&[PathBuf::from(source_path)])
-        .map_err(source_incident_message)?;
+        .map_err(source_incident_code)?;
     if page == 0 || page > source.page_count {
-        return Err("The requested PDF page no longer exists.".to_owned());
+        return Err(CommandError::new(ErrorCode::PageUnavailable));
     }
     runtime
-        .pdfium(&app)?
+        .pdfium(&app)
+        .map_err(|_| CommandError::new(ErrorCode::RendererUnavailable))?
         .render(&source.path, page)
         .map(|page| RedactionPageDto {
             page: page.page,
@@ -201,6 +204,7 @@ pub fn render_redaction_page(
                 })
                 .collect(),
         })
+        .map_err(|_| CommandError::new(ErrorCode::RendererUnavailable))
 }
 
 #[tauri::command]
@@ -209,12 +213,13 @@ pub fn preview_redaction_output(
     selections: Vec<PageRedactionsDto>,
     directory: String,
     file_name: String,
-) -> Result<OutputPreviewDto, String> {
+) -> CommandResult<OutputPreviewDto> {
     let source = inspect_source_path(&source_path)?;
     redaction_plan(selections, source.page_count)?;
-    let output =
-        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_message)?;
-    let path = LocalOutputReservation.preview(&output)?;
+    let output = OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_code)?;
+    let path = LocalOutputReservation
+        .preview(&output)
+        .map_err(|error| CommandError::new(output_error_code(&error)))?;
     Ok(OutputPreviewDto {
         output_path: path.display().to_string(),
         normalized_name: output.file_name,
@@ -226,7 +231,7 @@ pub fn start_redaction(
     app: AppHandle,
     runtime: State<'_, RedactionRuntime>,
     request: RedactionRequest,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     let RedactionRequest {
         source_path,
         selections,
@@ -235,15 +240,16 @@ pub fn start_redaction(
     } = request;
     let source = inspect_source_path(&source_path)?;
     let plan = redaction_plan(selections, source.page_count)?;
-    let output =
-        OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_message)?;
+    let output = OutputSpec::new(PathBuf::from(directory), &file_name).map_err(validation_code)?;
     let runtime = runtime.inner().clone();
-    let cancelled = runtime.begin()?;
+    let cancelled = runtime
+        .begin()
+        .map_err(|_| CommandError::new(ErrorCode::OperationInProgress))?;
     let renderer = match runtime.pdfium(&app) {
         Ok(renderer) => renderer,
-        Err(error) => {
+        Err(_) => {
             runtime.finish();
-            return Err(error);
+            return Err(CommandError::new(ErrorCode::RendererUnavailable));
         }
     };
 
@@ -284,7 +290,9 @@ pub fn start_redaction(
                 }
             }
             Err(_) if cancelled.load(Ordering::Relaxed) => RedactionEventDto::Cancelled,
-            Err(message) => RedactionEventDto::Failed { message },
+            Err(_) => RedactionEventDto::Failed {
+                error: ErrorCode::RedactionFailed,
+            },
         };
         let _ = app.emit(REDACTION_EVENT, event);
         runtime.finish();
@@ -293,20 +301,22 @@ pub fn start_redaction(
 }
 
 #[tauri::command]
-pub fn cancel_redaction(runtime: State<'_, RedactionRuntime>) -> Result<(), String> {
-    runtime.cancel()
+pub fn cancel_redaction(runtime: State<'_, RedactionRuntime>) -> CommandResult<()> {
+    runtime
+        .cancel()
+        .map_err(|_| CommandError::new(ErrorCode::Unexpected))
 }
 
-fn inspect_source_path(path: &str) -> Result<super::domain::SourcePdf, String> {
+fn inspect_source_path(path: &str) -> CommandResult<super::domain::SourcePdf> {
     LocalSourceInspector
         .inspect(&[PathBuf::from(path)])
-        .map_err(source_incident_message)
+        .map_err(source_incident_code)
 }
 
 fn redaction_plan(
     selections: Vec<PageRedactionsDto>,
     page_count: usize,
-) -> Result<RedactionPlan, String> {
+) -> CommandResult<RedactionPlan> {
     let selections = selections
         .into_iter()
         .map(|selection| {
@@ -320,36 +330,44 @@ fn redaction_plan(
                         rectangle.width,
                         rectangle.height,
                     )
-                    .ok_or_else(|| "A redaction rectangle is invalid.".to_owned())
+                    .ok_or_else(|| CommandError::new(ErrorCode::RedactionZoneInvalid))
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             Ok((selection.page, rectangles))
         })
-        .collect::<Result<Vec<_>, String>>()?;
-    RedactionPlan::new(selections, page_count).map_err(validation_message)
+        .collect::<CommandResult<Vec<_>>>()?;
+    RedactionPlan::new(selections, page_count).map_err(validation_code)
 }
 
-fn source_incident_message(incident: SourceIncident) -> String {
+fn source_incident_code(incident: SourceIncident) -> CommandError {
     match incident {
-        SourceIncident::NotPdf => "Choose a PDF file.".to_owned(),
-        SourceIncident::PasswordProtected => "This PDF is password protected.".to_owned(),
-        SourceIncident::Unreadable => "This PDF cannot be read.".to_owned(),
-        SourceIncident::Inaccessible => "This PDF is inaccessible.".to_owned(),
-        SourceIncident::MultipleSources => "Choose exactly one PDF file.".to_owned(),
-        SourceIncident::EmptyDocument => "This PDF contains no pages.".to_owned(),
+        SourceIncident::NotPdf => CommandError::new(ErrorCode::SourceNotPdf),
+        SourceIncident::PasswordProtected => CommandError::new(ErrorCode::SourcePasswordProtected),
+        SourceIncident::Unreadable => CommandError::new(ErrorCode::SourceUnreadable),
+        SourceIncident::Inaccessible => CommandError::new(ErrorCode::SourceInaccessible),
+        SourceIncident::MultipleSources => CommandError::new(ErrorCode::SourceMultiple),
+        SourceIncident::EmptyDocument => CommandError::new(ErrorCode::SourceEmpty),
     }
 }
 
-fn validation_message(error: RedactionValidationError) -> String {
+fn validation_code(error: RedactionValidationError) -> CommandError {
     match error {
-        RedactionValidationError::EmptySelection => {
-            "Select at least one word or zone to redact.".to_owned()
+        RedactionValidationError::EmptySelection => CommandError::new(ErrorCode::SelectionRequired),
+        RedactionValidationError::PageOutOfBounds => CommandError::new(ErrorCode::PageUnavailable),
+        RedactionValidationError::EmptyOutputName => {
+            CommandError::new(ErrorCode::OutputNameRequired)
         }
-        RedactionValidationError::PageOutOfBounds => "A selected page no longer exists.".to_owned(),
-        RedactionValidationError::EmptyOutputName => "The output name is required.".to_owned(),
         RedactionValidationError::DirectoryDoesNotExist => {
-            "The destination folder does not exist.".to_owned()
+            CommandError::new(ErrorCode::DestinationMissing)
         }
+    }
+}
+
+fn output_error_code(error: &str) -> ErrorCode {
+    match error {
+        "The destination folder does not exist." => ErrorCode::DestinationMissing,
+        "The destination folder is not writable." => ErrorCode::DestinationNotWritable,
+        _ => ErrorCode::RedactionFailed,
     }
 }
 

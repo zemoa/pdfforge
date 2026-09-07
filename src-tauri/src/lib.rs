@@ -3,6 +3,7 @@
 //! Business capabilities are added as Rust domain modules and exposed through
 //! narrowly-scoped Tauri command adapters. See ARCHITECTURE.md before adding one.
 
+mod error;
 mod merge;
 mod pdfium;
 mod redaction;

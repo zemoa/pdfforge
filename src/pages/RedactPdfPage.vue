@@ -333,12 +333,12 @@ function finishZoneGesture(event: PointerEvent) {
         <NText depth="3" class="workspace-intro">{{ t("redaction.intro") }}</NText>
 
         <NAlert
-          v-if="redaction.errorMessage"
+          v-if="redaction.errorCode"
           type="error"
           :title="t('redaction.error')"
           class="workspace-alert"
         >
-          {{ redaction.errorMessage }}
+          {{ t(`errors.${redaction.errorCode}`) }}
         </NAlert>
         <NAlert
           v-if="redaction.outcome === 'succeeded'"

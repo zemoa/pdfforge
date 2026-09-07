@@ -1,7 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
+import { errorCodeFrom, invokeCommand, type ErrorCode } from "./error";
 
 export interface NormalizedRect {
   left: number;
@@ -43,7 +44,7 @@ export type RedactionEvent =
   | { type: "progress"; current: number; total: number; percent: number }
   | { type: "succeeded"; outputPath: string; opened: boolean }
   | { type: "cancelled" }
-  | { type: "failed"; message: string };
+  | { type: "failed"; error: ErrorCode };
 
 export const redactionClient = {
   async pickPdfFile(): Promise<string | null> {
@@ -51,10 +52,14 @@ export const redactionClient = {
     return typeof result === "string" ? result : null;
   },
   inspectSource(paths: string[]) {
-    return invoke<RedactionSource>("inspect_redaction_source", { paths });
+    return invokeCommand<RedactionSource>("inspect_redaction_source", { paths }, "redactionFailed");
   },
   renderPage(sourcePath: string, page: number) {
-    return invoke<RedactionPage>("render_redaction_page", { sourcePath, page });
+    return invokeCommand<RedactionPage>(
+      "render_redaction_page",
+      { sourcePath, page },
+      "redactionFailed",
+    );
   },
   async pickFolder(): Promise<string | null> {
     const result = await open({ directory: true, multiple: false });
@@ -66,23 +71,38 @@ export const redactionClient = {
     directory: string,
     fileName: string,
   ) {
-    return invoke<OutputPreview>("preview_redaction_output", {
-      sourcePath,
-      selections,
-      directory,
-      fileName,
-    });
+    return invokeCommand<OutputPreview>(
+      "preview_redaction_output",
+      {
+        sourcePath,
+        selections,
+        directory,
+        fileName,
+      },
+      "redactionFailed",
+    );
   },
   start(sourcePath: string, selections: PageRedaction[], directory: string, fileName: string) {
-    return invoke<void>("start_redaction", {
-      request: { sourcePath, selections, directory, fileName },
-    });
+    return invokeCommand<void>(
+      "start_redaction",
+      {
+        request: { sourcePath, selections, directory, fileName },
+      },
+      "redactionFailed",
+    );
   },
   cancel() {
-    return invoke<void>("cancel_redaction");
+    return invokeCommand<void>("cancel_redaction", undefined, "redactionFailed");
   },
   onRedactionEvent(callback: (event: RedactionEvent) => void): Promise<UnlistenFn> {
-    return listen<RedactionEvent>("redaction-event", (event) => callback(event.payload));
+    return listen<RedactionEvent>("redaction-event", (event) => {
+      const payload = event.payload;
+      callback(
+        payload.type === "failed"
+          ? { type: "failed", error: errorCodeFrom(payload.error, "redactionFailed") }
+          : payload,
+      );
+    });
   },
   async onFileDrop(callback: (paths: string[]) => void): Promise<() => void> {
     return getCurrentWindow().onDragDropEvent((event) => {

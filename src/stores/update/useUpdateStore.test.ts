@@ -1,16 +1,16 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ check: vi.fn() }));
+const mocks = vi.hoisted(() => ({ check: vi.fn(), onUpdateEvent: vi.fn(), status: vi.fn() }));
 
 vi.mock("../../application/updateClient", () => ({
   updateClient: {
     cancel: vi.fn(),
     check: mocks.check,
-    onUpdateEvent: vi.fn(),
+    onUpdateEvent: mocks.onUpdateEvent,
     restore: vi.fn(),
     start: vi.fn(),
-    status: vi.fn(),
+    status: mocks.status,
   },
 }));
 
@@ -20,6 +20,8 @@ describe("update store", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     mocks.check.mockReset();
+    mocks.onUpdateEvent.mockReset();
+    mocks.status.mockReset();
   });
 
   it("shows an available update after an explicit search", async () => {
@@ -30,5 +32,32 @@ describe("update store", () => {
 
     expect(update.result).toEqual({ kind: "available", version: "1.2.0", notes: "Notes" });
     expect(update.phase).toBe("idle");
+  });
+
+  it("keeps a typed asynchronous update error for localized rendering", async () => {
+    mocks.status.mockResolvedValue({
+      installedVersion: "1.0.0",
+      rollbackAvailable: false,
+      updatedTo: null,
+      installationError: false,
+    });
+    mocks.onUpdateEvent.mockImplementation(async (callback) => {
+      callback({ type: "failed", error: "updateDownloadFailed" });
+      return vi.fn();
+    });
+    const update = useUpdateStore();
+
+    await update.initialize();
+
+    expect(update.errorCode).toBe("updateDownloadFailed");
+  });
+
+  it("keeps a typed command error for localized rendering", async () => {
+    mocks.check.mockRejectedValue({ code: "updateCheckFailed" });
+    const update = useUpdateStore();
+
+    await update.check("fr");
+
+    expect(update.errorCode).toBe("updateCheckFailed");
   });
 });

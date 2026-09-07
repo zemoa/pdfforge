@@ -7,6 +7,7 @@ import {
   type SplitMode,
   type SplitSource,
 } from "../../application/splitClient";
+import { errorCodeFrom, type ErrorCode } from "../../application/error";
 
 const THUMBNAIL_BATCH_SIZE = 24;
 
@@ -26,7 +27,7 @@ export const useSplitStore = defineStore("split", () => {
   const outputName = ref("");
   const destination = ref("");
   const outputPreview = ref<OutputPreview | null>(null);
-  const errorMessage = ref<string | null>(null);
+  const errorCode = ref<ErrorCode | null>(null);
   const outcome = ref<"succeeded" | "cancelled" | null>(null);
   const phase = ref<"preparing" | "running">("preparing");
   const progress = ref({ current: 0, total: 0, percent: 0 });
@@ -56,7 +57,7 @@ export const useSplitStore = defineStore("split", () => {
     unlisten ??= await splitClient.onSplitEvent((event) => {
       if (event.type === "progress") progress.value = event;
       if (event.type === "failed") {
-        errorMessage.value = event.message;
+        errorCode.value = event.error;
         phase.value = "preparing";
       }
       if (event.type === "cancelled") {
@@ -90,7 +91,7 @@ export const useSplitStore = defineStore("split", () => {
   async function addSelectedPaths(paths: string[]) {
     if (paths.length === 0 || phase.value === "running") return;
     try {
-      errorMessage.value = null;
+      errorCode.value = null;
       outcome.value = null;
       source.value = await splitClient.inspectSource(paths);
       mode.value = "eachPage";
@@ -101,7 +102,7 @@ export const useSplitStore = defineStore("split", () => {
       outputPreview.value = null;
       await loadNextThumbnails();
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "splitFailed");
     }
   }
 
@@ -139,7 +140,7 @@ export const useSplitStore = defineStore("split", () => {
       };
       loadedPageCount.value = lastPage;
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "splitFailed");
     } finally {
       thumbnailsLoading.value = false;
     }
@@ -206,7 +207,7 @@ export const useSplitStore = defineStore("split", () => {
   async function requestSummary() {
     if (!source.value || !canRequestSummary.value) return null;
     try {
-      errorMessage.value = null;
+      errorCode.value = null;
       outputPreview.value = await splitClient.previewOutput(
         source.value.path,
         mode.value,
@@ -217,7 +218,7 @@ export const useSplitStore = defineStore("split", () => {
       );
       return outputPreview.value;
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "splitFailed");
       return null;
     }
   }
@@ -236,7 +237,7 @@ export const useSplitStore = defineStore("split", () => {
         outputName.value,
       );
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "splitFailed");
       phase.value = "preparing";
     }
   }
@@ -286,7 +287,7 @@ export const useSplitStore = defineStore("split", () => {
     outputName,
     destination,
     outputPreview,
-    errorMessage,
+    errorCode,
     outcome,
     phase,
     progress,

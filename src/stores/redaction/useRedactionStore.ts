@@ -8,6 +8,7 @@ import {
   type RedactionPage,
   type RedactionSource,
 } from "../../application/redactionClient";
+import { errorCodeFrom, type ErrorCode } from "../../application/error";
 import {
   addWordRange,
   addZone,
@@ -31,7 +32,7 @@ export const useRedactionStore = defineStore("redaction", () => {
   const selections = ref<SelectionsByPage>({});
   const zones = ref<ZonesByPage>({});
   const loadingPage = ref(false);
-  const errorMessage = ref<string | null>(null);
+  const errorCode = ref<ErrorCode | null>(null);
   const outputName = ref("");
   const destination = ref("");
   const outputPreview = ref<OutputPreview | null>(null);
@@ -103,7 +104,7 @@ export const useRedactionStore = defineStore("redaction", () => {
     unlisten ??= await redactionClient.onRedactionEvent((event) => {
       if (event.type === "progress") progress.value = event;
       if (event.type === "failed") {
-        errorMessage.value = event.message;
+        errorCode.value = event.error;
         phase.value = "preparing";
       }
       if (event.type === "cancelled") {
@@ -137,7 +138,7 @@ export const useRedactionStore = defineStore("redaction", () => {
   async function addSelectedPaths(paths: string[]) {
     if (paths.length === 0 || phase.value === "running") return;
     try {
-      errorMessage.value = null;
+      errorCode.value = null;
       outcome.value = null;
       const nextSource = await redactionClient.inspectSource(paths);
       source.value = nextSource;
@@ -150,7 +151,7 @@ export const useRedactionStore = defineStore("redaction", () => {
       outputPreview.value = null;
       await loadPage(1);
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "redactionFailed");
     }
   }
 
@@ -164,12 +165,12 @@ export const useRedactionStore = defineStore("redaction", () => {
       return;
     const request = ++requestedPage;
     loadingPage.value = true;
-    errorMessage.value = null;
+    errorCode.value = null;
     try {
       const pagePreview = await redactionClient.renderPage(source.value.path, page);
       if (request === requestedPage) renderedPage.value = pagePreview;
     } catch (error) {
-      if (request === requestedPage) errorMessage.value = String(error);
+      if (request === requestedPage) errorCode.value = errorCodeFrom(error, "redactionFailed");
     } finally {
       if (request === requestedPage) loadingPage.value = false;
     }
@@ -282,7 +283,7 @@ export const useRedactionStore = defineStore("redaction", () => {
   async function requestSummary() {
     if (!source.value || !canRequestSummary.value) return null;
     try {
-      errorMessage.value = null;
+      errorCode.value = null;
       outputPreview.value = await redactionClient.previewOutput(
         source.value.path,
         redactionSelections.value,
@@ -291,7 +292,7 @@ export const useRedactionStore = defineStore("redaction", () => {
       );
       return outputPreview.value;
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "redactionFailed");
       return null;
     }
   }
@@ -308,7 +309,7 @@ export const useRedactionStore = defineStore("redaction", () => {
         outputName.value,
       );
     } catch (error) {
-      errorMessage.value = String(error);
+      errorCode.value = errorCodeFrom(error, "redactionFailed");
       phase.value = "preparing";
     }
   }
@@ -325,7 +326,7 @@ export const useRedactionStore = defineStore("redaction", () => {
     zones.value = {};
     nextZoneId = 1;
     loadingPage.value = false;
-    errorMessage.value = null;
+    errorCode.value = null;
     outputName.value = "";
     destination.value = "";
     outputPreview.value = null;
@@ -350,7 +351,7 @@ export const useRedactionStore = defineStore("redaction", () => {
     source,
     renderedPage,
     loadingPage,
-    errorMessage,
+    errorCode,
     outputName,
     destination,
     outputPreview,

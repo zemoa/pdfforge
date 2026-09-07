@@ -10,6 +10,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 
+use crate::error::{CommandError, CommandResult, ErrorCode};
 use crate::{
     merge::presentation::MergeRuntime, redaction::presentation::RedactionRuntime,
     split::presentation::SplitRuntime,
@@ -99,12 +100,12 @@ enum UpdateEventDto {
     Progress { downloaded: u64, total: Option<u64> },
     Cancelled,
     ManualDownload { version: String },
-    Failed { message: String },
+    Failed { error: ErrorCode },
 }
 
 #[tauri::command]
-pub fn update_status(app: AppHandle) -> Result<UpdateStatusDto, String> {
-    let root = update_root(&app)?;
+pub fn update_status(app: AppHandle) -> CommandResult<UpdateStatusDto> {
+    let root = update_root(&app).map_err(|_| CommandError::new(ErrorCode::UpdateInstallFailed))?;
     let notification = root.join(NOTIFICATION_FILE);
     let failure = root.join(FAILURE_FILE);
     let updated_to = fs::read_to_string(&notification)
@@ -129,7 +130,7 @@ pub fn update_status(app: AppHandle) -> Result<UpdateStatusDto, String> {
 pub async fn check_for_update(
     runtime: State<'_, UpdateRuntime>,
     locale: String,
-) -> Result<CheckResultDto, String> {
+) -> CommandResult<CheckResultDto> {
     let runtime = runtime.inner().clone();
     let checked = tauri::async_runtime::spawn_blocking(move || {
         let installed = parse_version(env!("CARGO_PKG_VERSION"))?;
@@ -142,7 +143,8 @@ pub async fn check_for_update(
         Ok::<_, String>((result, locale))
     })
     .await
-    .map_err(|_| "The update search could not be completed.".to_owned())??;
+    .map_err(|_| CommandError::new(ErrorCode::UpdateCheckFailed))?
+    .map_err(|_| CommandError::new(ErrorCode::UpdateCheckFailed))?;
     Ok(check_dto(checked.0, &checked.1))
 }
 
@@ -153,21 +155,23 @@ pub fn start_update(
     merge: State<'_, MergeRuntime>,
     split: State<'_, SplitRuntime>,
     redaction: State<'_, RedactionRuntime>,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     if merge.is_active() || split.is_active() || redaction.is_active() {
-        return Err(
-            "A PDF operation is in progress. Finish or cancel it before installing an update."
-                .to_owned(),
-        );
+        return Err(CommandError::new(ErrorCode::PdfOperationInProgress));
     }
-    let release = runtime.available()?;
-    let platform = Platform::current()?;
+    let release = runtime
+        .available()
+        .map_err(|_| CommandError::new(ErrorCode::UpdateUnavailable))?;
+    let platform =
+        Platform::current().map_err(|_| CommandError::new(ErrorCode::UpdateUnavailable))?;
     let asset = platform
         .asset(&release)
         .cloned()
-        .ok_or_else(|| "This update is not available for this system.".to_owned())?;
+        .ok_or_else(|| CommandError::new(ErrorCode::UpdateUnavailable))?;
     let runtime = runtime.inner().clone();
-    let cancelled = runtime.begin()?;
+    let cancelled = runtime
+        .begin()
+        .map_err(|_| CommandError::new(ErrorCode::OperationInProgress))?;
     tauri::async_runtime::spawn_blocking(move || {
         let result = download_install(&app, &release, &asset, platform, cancelled.as_ref());
         match result {
@@ -184,7 +188,12 @@ pub fn start_update(
                 let _ = app.emit(UPDATE_EVENT, UpdateEventDto::Cancelled);
             }
             Err(message) => {
-                let _ = app.emit(UPDATE_EVENT, UpdateEventDto::Failed { message });
+                let _ = app.emit(
+                    UPDATE_EVENT,
+                    UpdateEventDto::Failed {
+                        error: update_error_code(&message),
+                    },
+                );
             }
         }
         runtime.finish();
@@ -203,28 +212,25 @@ pub fn restore_previous_update(
     merge: State<'_, MergeRuntime>,
     split: State<'_, SplitRuntime>,
     redaction: State<'_, RedactionRuntime>,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     if merge.is_active() || split.is_active() || redaction.is_active() {
-        return Err(
-            "A PDF operation is in progress. Finish or cancel it before restoring a version."
-                .to_owned(),
-        );
+        return Err(CommandError::new(ErrorCode::PdfOperationInProgress));
     }
-    let root = update_root(&app)?;
+    let root = update_root(&app).map_err(|_| CommandError::new(ErrorCode::UpdateRestoreFailed))?;
     let previous = previous_path(&root);
     if !previous.is_file() {
-        return Err("There is no previous version to restore.".to_owned());
+        return Err(CommandError::new(ErrorCode::PreviousVersionUnavailable));
     }
     let restore = root.join("temporary").join("restore-candidate");
     fs::create_dir_all(
         restore
             .parent()
-            .ok_or_else(|| "The restore folder is unavailable.".to_owned())?,
+            .ok_or_else(|| CommandError::new(ErrorCode::UpdateRestoreFailed))?,
     )
-    .map_err(|_| "The restore folder is unavailable.".to_owned())?;
-    fs::copy(&previous, &restore)
-        .map_err(|_| "The previous version cannot be prepared for restoration.".to_owned())?;
+    .map_err(|_| CommandError::new(ErrorCode::UpdateRestoreFailed))?;
+    fs::copy(&previous, &restore).map_err(|_| CommandError::new(ErrorCode::UpdateRestoreFailed))?;
     replace_with(&app, &restore, "", false)
+        .map_err(|_| CommandError::new(ErrorCode::UpdateRestoreFailed))
 }
 
 enum InstallOutcome {
@@ -247,6 +253,26 @@ fn check_dto(result: CheckResult, locale: &str) -> CheckResultDto {
             },
         },
     }
+}
+
+fn update_error_code(message: &str) -> ErrorCode {
+    if message.contains("cancelled") {
+        return ErrorCode::Unexpected;
+    }
+    if message.contains("enough space") {
+        return ErrorCode::UpdateSpaceUnavailable;
+    }
+    if message.contains("checksum")
+        || message.contains("signature")
+        || message.contains("verification")
+    {
+        return ErrorCode::UpdateVerificationFailed;
+    }
+    if message.contains("download") || message.contains("service") || message.contains("connection")
+    {
+        return ErrorCode::UpdateDownloadFailed;
+    }
+    ErrorCode::UpdateInstallFailed
 }
 
 fn download_install(
@@ -467,4 +493,26 @@ fn unique_path(directory: &Path, file_name: &str) -> PathBuf {
         .map(|number| directory.join(format!("{stem}-{number}.{extension}")))
         .find(|candidate| !candidate.exists())
         .expect("an unused numbered path exists")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::update_error_code;
+    use crate::error::ErrorCode;
+
+    #[test]
+    fn classifies_update_failures_without_returning_the_technical_message() {
+        assert_eq!(
+            update_error_code("The update checksum could not be verified."),
+            ErrorCode::UpdateVerificationFailed
+        );
+        assert_eq!(
+            update_error_code("There is not enough space to download the update."),
+            ErrorCode::UpdateSpaceUnavailable
+        );
+        assert_eq!(
+            update_error_code("a future technical failure"),
+            ErrorCode::UpdateInstallFailed
+        );
+    }
 }
