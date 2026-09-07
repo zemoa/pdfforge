@@ -115,6 +115,20 @@ function selectMode(mode: string | number) {
       </section>
     </template>
 
+    <template v-if="split.source && split.phase !== 'running'" #right-panel>
+      <NRadioGroup
+        class="mode-options"
+        :value="split.mode"
+        name="split-mode"
+        size="small"
+        @update:value="selectMode"
+      >
+        <NRadioButton value="eachPage">{{ t("split.eachPage") }}</NRadioButton>
+        <NRadioButton value="extract">{{ t("split.extract") }}</NRadioButton>
+        <NRadioButton value="groups">{{ t("split.groups") }}</NRadioButton>
+      </NRadioGroup>
+    </template>
+
     <section class="split-workspace">
       <template v-if="split.phase === 'running'"
         ><div class="process-state">
@@ -152,15 +166,6 @@ function selectMode(mode: string | number) {
               <span class="toolbar-title">{{ t("split.mode") }}</span
               ><span class="toolbar-meta">{{ t(`split.modeHelp.${split.mode}`) }}</span>
             </div>
-            <NRadioGroup
-              :value="split.mode"
-              name="split-mode"
-              size="small"
-              @update:value="selectMode"
-              ><NRadioButton value="eachPage">{{ t("split.eachPage") }}</NRadioButton
-              ><NRadioButton value="extract">{{ t("split.extract") }}</NRadioButton
-              ><NRadioButton value="groups">{{ t("split.groups") }}</NRadioButton></NRadioGroup
-            >
           </div>
           <div v-if="split.mode !== 'eachPage'" class="selection-strip">
             <span>{{
@@ -360,7 +365,7 @@ label {
   align-items: center;
   display: flex;
   gap: 1rem;
-  justify-content: space-between;
+  min-width: 0;
 }
 .workspace-toolbar > div {
   display: grid;
@@ -372,8 +377,33 @@ label {
 }
 .toolbar-meta {
   color: var(--text-tertiary);
+  display: block;
   font-size: 0.65rem;
   max-width: 26rem;
+}
+.mode-options {
+  align-content: start;
+  align-self: start;
+  display: grid !important;
+  gap: 0.4rem;
+  grid-auto-rows: var(--n-height);
+  height: auto !important;
+  width: 100%;
+}
+.mode-options :deep(.n-radio-group__splitor) {
+  display: none;
+}
+.mode-options :deep(.n-radio-button) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: block;
+  height: var(--n-height) !important;
+  line-height: var(--n-height) !important;
+  overflow: hidden;
+  padding: 0 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
 }
 .selection-strip {
   align-items: center;
@@ -407,13 +437,16 @@ label {
   padding: 0 0 0 0.25rem;
 }
 .thumbnail-workspace {
+  flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: auto;
 }
 .thumbnail-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  min-width: 0;
   padding: 1rem 0;
 }
 .page-thumbnail {
