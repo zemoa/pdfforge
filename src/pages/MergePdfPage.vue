@@ -16,6 +16,7 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
+import DestinationFolderInput from "../components/DestinationFolderInput.vue";
 import LineIcon from "../components/LineIcon.vue";
 import ToolWorkspaceShell from "../components/ToolWorkspaceShell.vue";
 import { useMergeStore } from "../stores/merge/useMergeStore";
@@ -108,11 +109,12 @@ function dropSource(index: number) {
           /></label>
           <label
             >{{ t("merge.destinationPath")
-            }}<NInput
+            }}<DestinationFolderInput
               :value="merge.destination"
               :disabled="merge.phase === 'running'"
               :placeholder="t('merge.destinationPlaceholder')"
               @update:value="merge.chooseDestination"
+              @paste="merge.pasteDestination"
           /></label>
           <NButton
             quaternary

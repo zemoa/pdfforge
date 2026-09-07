@@ -133,6 +133,15 @@ the rendered page dimensions and visual orientation, but is no longer
 interactive or text-selectable. Progress and cancellation are owned by the
 redaction runtime; a cancellation or failure removes its reserved output file.
 
+### Pasted destination folders on Windows (2026-09-07)
+
+When the user pastes into a destination field for merge, split or redaction,
+the renderer asks one narrow backend command for the Windows `CF_HDROP` value.
+Only one existing copied directory is returned, so Explorer aliases such as a
+localized Downloads name become their full filesystem path. The command reads
+no text and exposes no general clipboard permission to the renderer; text
+paste remains the frontend fallback on every platform.
+
 ### Explicit signed application updates (2026-09-06)
 
 FTR-006 introduces the independent `update` Rust business domain. It is the

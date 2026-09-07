@@ -9,6 +9,7 @@ import {
   type RedactionSource,
 } from "../../application/redactionClient";
 import { errorCodeFrom, type ErrorCode } from "../../application/error";
+import { createPastedDestinationIntent } from "../destination/pasteDestination";
 import {
   addWordRange,
   addZone,
@@ -343,6 +344,11 @@ export const useRedactionStore = defineStore("redaction", () => {
     outputPreview.value = null;
   }
 
+  const pasteDestination = createPastedDestinationIntent(
+    () => phase.value === "running",
+    chooseDestination,
+  );
+
   async function requestSummary() {
     if (!source.value || !canRequestSummary.value) return null;
     try {
@@ -450,6 +456,7 @@ export const useRedactionStore = defineStore("redaction", () => {
     chooseDestinationFolder,
     renameOutput,
     chooseDestination,
+    pasteDestination,
     requestSummary,
     confirmRedaction,
     cancelRedaction,

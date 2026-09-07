@@ -37,3 +37,6 @@ sha2 = "0.10.9"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "=2.7.3"
 tauri-plugin-opener = "2.5.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+clipboard-win = "5.4.1"

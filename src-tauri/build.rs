@@ -1,6 +1,7 @@
 fn main() {
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
+            "resolve_pasted_destination_folder",
             "inspect_merge_sources",
             "preview_merge_output",
             "start_merge",

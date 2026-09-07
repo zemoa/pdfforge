@@ -3,6 +3,7 @@
 //! Business capabilities are added as Rust domain modules and exposed through
 //! narrowly-scoped Tauri command adapters. See ARCHITECTURE.md before adding one.
 
+mod destination;
 mod error;
 mod merge;
 mod pdfium;
@@ -20,6 +21,7 @@ pub fn run() {
         .manage(split::presentation::SplitRuntime::default())
         .manage(update::presentation::UpdateRuntime::default())
         .invoke_handler(tauri::generate_handler![
+            destination::resolve_pasted_destination_folder,
             merge::presentation::inspect_merge_sources,
             merge::presentation::preview_merge_output,
             merge::presentation::start_merge,

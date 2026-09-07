@@ -8,6 +8,7 @@ import {
   type SplitSource,
 } from "../../application/splitClient";
 import { errorCodeFrom, type ErrorCode } from "../../application/error";
+import { createPastedDestinationIntent } from "../destination/pasteDestination";
 
 const THUMBNAIL_BATCH_SIZE = 24;
 
@@ -204,6 +205,11 @@ export const useSplitStore = defineStore("split", () => {
     outputPreview.value = null;
   }
 
+  const pasteDestination = createPastedDestinationIntent(
+    () => phase.value === "running",
+    chooseDestination,
+  );
+
   async function requestSummary() {
     if (!source.value || !canRequestSummary.value) return null;
     try {
@@ -306,6 +312,7 @@ export const useSplitStore = defineStore("split", () => {
     removeSource,
     renameOutput,
     chooseDestination,
+    pasteDestination,
     requestSummary,
     confirmSplit,
     cancelSplit,

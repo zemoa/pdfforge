@@ -19,6 +19,7 @@ import {
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
+import DestinationFolderInput from "../components/DestinationFolderInput.vue";
 import LineIcon from "../components/LineIcon.vue";
 import ToolWorkspaceShell from "../components/ToolWorkspaceShell.vue";
 import {
@@ -134,6 +135,7 @@ watch(
 async function openSummary() {
   if (await redaction.requestSummary()) showSummary.value = true;
 }
+
 onBeforeUnmount(() => {
   viewerResizeObserver?.disconnect();
   window.removeEventListener("pointermove", updateZoneGesture);
@@ -619,11 +621,12 @@ function finishZoneGesture(event: PointerEvent) {
             </label>
             <label>
               {{ t("redaction.destinationPath") }}
-              <NInput
+              <DestinationFolderInput
                 :value="redaction.destination"
                 :disabled="redaction.phase === 'running'"
                 :placeholder="t('redaction.destinationPlaceholder')"
                 @update:value="redaction.chooseDestination"
+                @paste="redaction.pasteDestination"
               />
             </label>
             <NButton

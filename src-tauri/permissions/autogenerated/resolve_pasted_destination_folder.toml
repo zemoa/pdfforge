@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-resolve-pasted-destination-folder"
+description = "Enables the resolve_pasted_destination_folder command without any pre-configured scope."
+commands.allow = ["resolve_pasted_destination_folder"]
+
+[[permission]]
+identifier = "deny-resolve-pasted-destination-folder"
+description = "Denies the resolve_pasted_destination_folder command without any pre-configured scope."
+commands.deny = ["resolve_pasted_destination_folder"]

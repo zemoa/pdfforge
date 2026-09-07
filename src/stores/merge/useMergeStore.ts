@@ -9,6 +9,7 @@ import {
   type OutputPreview,
 } from "../../application/mergeClient";
 import { errorCodeFrom, type ErrorCode } from "../../application/error";
+import { createPastedDestinationIntent } from "../destination/pasteDestination";
 
 export const useMergeStore = defineStore("merge", () => {
   const sources = ref<MergeSource[]>([]);
@@ -137,6 +138,11 @@ export const useMergeStore = defineStore("merge", () => {
     outputPreview.value = null;
   }
 
+  const pasteDestination = createPastedDestinationIntent(
+    () => phase.value === "running",
+    chooseDestination,
+  );
+
   async function requestSummary() {
     if (!canRequestSummary.value) return null;
     try {
@@ -214,6 +220,7 @@ export const useMergeStore = defineStore("merge", () => {
     reorderSource,
     renameOutput,
     chooseDestination,
+    pasteDestination,
     requestSummary,
     confirmMerge,
     cancelMerge,

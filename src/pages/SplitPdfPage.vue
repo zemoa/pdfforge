@@ -17,6 +17,7 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
+import DestinationFolderInput from "../components/DestinationFolderInput.vue";
 import LineIcon from "../components/LineIcon.vue";
 import ToolWorkspaceShell from "../components/ToolWorkspaceShell.vue";
 import { useSplitStore } from "../stores/split/useSplitStore";
@@ -40,6 +41,7 @@ onBeforeUnmount(() => split.dispose());
 async function openSummary() {
   if (await split.requestSummary()) showSummary.value = true;
 }
+
 function selectMode(mode: string | number) {
   if (mode === "eachPage" || mode === "extract" || mode === "groups") split.chooseMode(mode);
 }
@@ -99,11 +101,12 @@ function selectMode(mode: string | number) {
               @update:value="split.renameOutput" /></label
           ><label
             >{{ t("split.destinationPath")
-            }}<NInput
+            }}<DestinationFolderInput
               :value="split.destination"
               :disabled="split.phase === 'running'"
               :placeholder="t('split.destinationPlaceholder')"
-              @update:value="split.chooseDestination" /></label
+              @update:value="split.chooseDestination"
+              @paste="split.pasteDestination" /></label
           ><NButton
             quaternary
             size="small"
