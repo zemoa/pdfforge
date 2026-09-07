@@ -1,0 +1,5 @@
+{
+  "version": "1.1.0",
+  "fr": "- La fenêtre peut maintenant être redimensionnée depuis ses bords et ses coins.\n- Dans Masquage, la page s’ajuste automatiquement à l’espace disponible et propose un zoom manuel.\n- Les erreurs sont désormais affichées dans la langue de l’application, sans détail technique.\n- Sous Windows, le collage d’un dossier copié dans une destination fonctionne avec les noms de dossiers localisés.\n- Améliorations de la navigation et des confirmations dans les outils PDF.",
+  "en": "- The window can now be resized from its edges and corners.\n- In Redact, the page automatically fits the available space and supports manual zoom.\n- Errors are now displayed in the application language without technical details.\n- On Windows, pasting a copied folder into a destination works with localized folder names.\n- Improved navigation and confirmations across PDF tools."
+}
