@@ -1,0 +1,5 @@
+{
+  "version": "1.1.1",
+  "fr": "- Corrige la récupération des chemins de fichiers copiés depuis le presse-papiers sous Windows.",
+  "en": "- Fixes retrieving copied file paths from the clipboard on Windows."
+}
