@@ -57,6 +57,10 @@ const viewerStyle = computed(() => ({
   aspectRatio: `${redaction.renderedPage?.aspectRatio ?? 1} / 1`,
   width: `${redaction.zoom * 100}%`,
 }));
+const displayedOutputName = computed(() => {
+  const outputName = redaction.outputName.trim() || t("redaction.outputPlaceholder");
+  return outputName.toLowerCase().endsWith(".pdf") ? outputName : `${outputName}.pdf`;
+});
 const isZoneMode = computed(
   () => redaction.canDrawZones && (!redaction.hasSelectableText || selectionMode.value === "zone"),
 );
@@ -517,7 +521,7 @@ function finishZoneGesture(event: PointerEvent) {
 
     <template #footer>
       <div class="footer-copy">
-        {{ redaction.outputName || t("redaction.outputPlaceholder") }}.pdf
+        {{ displayedOutputName }}
         <span>{{ t("common.creationNote") }}</span>
       </div>
       <NButton
@@ -544,16 +548,6 @@ function finishZoneGesture(event: PointerEvent) {
     style="width: min(92vw, 42rem)"
   >
     <NThing :title="redaction.source?.name" :description="redaction.source?.path" />
-    <NList bordered>
-      <template v-for="selection in redaction.selectionSummary" :key="selection.page">
-        <NListItem v-for="word in selection.words" :key="word.index">{{
-          t("redaction.selection", { page: selection.page, word: word.text })
-        }}</NListItem>
-        <NListItem v-for="(zone, index) in selection.zones" :key="zone.id">{{
-          t("redaction.zoneSelection", { page: selection.page, zone: index + 1 })
-        }}</NListItem>
-      </template>
-    </NList>
     <p>
       <strong>{{ t("redaction.output") }}</strong> {{ redaction.outputPreview?.outputPath }}
     </p>

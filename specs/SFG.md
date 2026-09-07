@@ -146,7 +146,9 @@ récupérées. Avant confirmation, il peut vérifier, modifier ou retirer les
 zones sélectionnées. Le document d'origine reste intact. Par défaut, le nom du
 nouveau fichier est `<nom du document d'origine>-masked.pdf` et son dossier de
 destination est celui du document d'origine ; l'utilisateur peut modifier ces
-deux valeurs avant confirmation.
+deux valeurs avant confirmation. La fenêtre de confirmation ne détaille aucune
+des parties masquées ; celles-ci restent visibles et modifiables dans l'aperçu et
+le panneau des sélections avant l'ouverture de cette fenêtre.
 
 ### Gérer les incidents
 
