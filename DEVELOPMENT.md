@@ -150,3 +150,23 @@ Without both certificate secrets, the portable executable is built unsigned. Nev
 ## Documentation maintenance
 
 All architecture decisions belong in `ARCHITECTURE.md`. All developer-facing operating instructions belong here. Update `AGENTS.md` only when the required AI workflow changes.
+
+### README screenshots
+
+Keep the four PNGs in `docs/images/` aligned with the current interface. Use
+English, the light theme, a 1100 × 760 logical-pixel viewport and a 1.25 scale
+factor (1375 × 950 output pixels). Capture the home screen as `welcome.png` and
+the empty Merge, Split and Redact workspaces as `merge.png`, `split.png` and
+`redact.png`. Leave the default panels expanded, move the pointer away from
+controls, and wait for fonts and transitions to settle. Exclude browser chrome,
+personal documents and filesystem paths.
+
+The empty workspaces can be captured from the local renderer with `pnpm dev`
+at `http://localhost:1420/#/`, `/#/merge`, `/#/split` and `/#/redact`. Browser
+preview has no Tauri backend, so it is suitable only for these presentation
+captures; use `pnpm tauri dev` for any capture requiring document operations or
+update status. This is documentation capture, not an end-to-end test suite.
+
+Inspect every image for clipped controls or transient overlays, check its
+README link and alt text, and run
+`pnpm exec prettier README.md DEVELOPMENT.md --check` after documentation edits.
