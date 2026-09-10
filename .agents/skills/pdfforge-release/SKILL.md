@@ -9,6 +9,21 @@ Assess and prepare the requested PDFForge release without publishing it. This
 is an interactive workflow: the user always approves both the exact version and
 the complete bilingual release notes before the skill changes any release file.
 
+## Model and delegation
+
+Use Luna (`gpt-5.6-luna`) for release assessment, bilingual notes and approved
+preparation. If already running as Luna, execute the workflow directly and do
+not delegate it again. Otherwise, delegate each stage to one Luna subagent with
+`collaboration.spawn_agent`, setting `model: "gpt-5.6-luna"` and
+`fork_turns: "none"`. Include the repository path, this skill's path, the user's
+request and any exact version or notes already approved in the task message.
+While Luna works, the parent checks the applicable release procedure and reviews
+the returned evidence; it relays proposals and collects the required approvals.
+Resume the same Luna agent with `collaboration.followup_task` for later stages,
+passing the user's exact approvals or revisions. Do not let the agent proceed
+past an approval boundary without that approval. If Luna or delegation is
+unavailable, report the limitation instead of silently using another model.
+
 ## Scope and source of truth
 
 - Work in the PDFForge repository. Read the **Signed update releases** section of `DEVELOPMENT.md` and inspect `scripts/release.mjs` before acting, so the local procedure remains authoritative.

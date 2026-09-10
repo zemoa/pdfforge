@@ -96,6 +96,11 @@ Keep `pnpm-lock.yaml` and `src-tauri/Cargo.lock` committed. Direct JavaScript de
 
 ## Signed update releases
 
+The repository's `pdfforge-release` skill uses Luna (`gpt-5.6-luna`) for
+assessment, bilingual notes and release preparation. The coordinating agent
+relays proposals and user approvals to the same Luna subagent across stages.
+See [the skill](.agents/skills/pdfforge-release/SKILL.md) for the workflow.
+
 Before publishing the first update-capable release, generate an Ed25519 key
 pair and keep the private PEM outside the repository. Configure the base64
 encoded 32-byte public key as the GitHub repository variable
