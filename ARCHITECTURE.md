@@ -164,6 +164,16 @@ the process exits. When the running location cannot be written, the verified
 asset is saved in Downloads for manual replacement. No check, download,
 installation, retry, or telemetry runs automatically.
 
+### Notes for all missing releases (2026-09-10)
+
+The explicit update check reads every page of public releases. The Rust
+application service retains notes for every eligible version newer than the
+installed version, sorted by descending semantic version, while selecting only
+the newest release as the installation target. The existing check DTO carries
+the localized notes as a versioned list, including when the latest release is
+unsupported on the current platform. The update dialog renders this list in a
+scrollable region. No additional command, permission or persistent state is needed.
+
 ### Localized IPC errors (2026-09-07)
 
 Every user-visible command failure crosses IPC as a stable serialized error code,

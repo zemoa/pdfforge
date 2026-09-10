@@ -43,7 +43,11 @@ Lorsqu'une Release ne contient pas d'artefact pour la plateforme courante,
 l'application affiche « Cette version n'est pas disponible pour votre système. ».
 
 Lorsqu'une nouvelle version est disponible, l'application affiche son numéro et
-ses notes de version. Chaque Release fournit des notes françaises et anglaises.
+les notes de toutes les Releases stables plus récentes que la version installée,
+regroupées par version de la plus récente à la plus ancienne dans une liste
+défilante. Ces notes restent consultables si la dernière version est indisponible
+pour le système. Le téléchargement et l'installation ciblent la dernière version.
+Chaque Release fournit des notes françaises et anglaises.
 Les notes françaises sont affichées lorsque la langue de l'utilisateur est le
 français ; les notes anglaises le sont dans tous les autres cas.
 

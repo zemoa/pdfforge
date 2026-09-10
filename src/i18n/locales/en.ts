@@ -80,6 +80,7 @@ export default {
     manualBody:
       "PDFForge {version} was downloaded to your Downloads folder for manual replacement.",
     manualTitle: "Manual replacement required",
+    releaseNotes: "Release notes for missing versions",
     restore: "Restore previous version",
     title: "About and updates",
     unsupported: "This version is not available for your system.",

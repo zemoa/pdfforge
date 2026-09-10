@@ -9,10 +9,15 @@ export interface UpdateStatus {
   installationError: boolean;
 }
 
+export interface ReleaseNotes {
+  version: string;
+  notes: string;
+}
+
 export type UpdateCheck =
   | { kind: "upToDate" }
-  | { kind: "unsupported"; version: string }
-  | { kind: "available"; version: string; notes: string };
+  | { kind: "unsupported"; version: string; releases: ReleaseNotes[] }
+  | { kind: "available"; version: string; releases: ReleaseNotes[] };
 
 export type UpdateEvent =
   | { type: "progress"; downloaded: number; total: number | null }

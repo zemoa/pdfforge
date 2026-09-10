@@ -37,7 +37,7 @@ struct GithubAsset {
 pub fn fetch_releases() -> Result<Vec<Release>, String> {
     let client = client()?;
     let mut result = Vec::new();
-    for page in 1..=10 {
+    for page in 1.. {
         let url = format!("{RELEASES_URL}?per_page=100&page={page}");
         let response = client
             .get(url)

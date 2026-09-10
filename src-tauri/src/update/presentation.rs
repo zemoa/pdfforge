@@ -18,7 +18,7 @@ use crate::{
 
 use super::{
     application::select_update,
-    domain::{CheckResult, Platform, Release},
+    domain::{CheckResult, Platform, Release, ReleaseNotes},
     infrastructure::{download_and_verify, fetch_releases, parse_version},
 };
 
@@ -87,11 +87,23 @@ pub struct UpdateStatusDto {
 }
 
 #[derive(Serialize)]
+pub struct ReleaseNotesDto {
+    version: String,
+    notes: String,
+}
+
+#[derive(Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum CheckResultDto {
     UpToDate,
-    Unsupported { version: String },
-    Available { version: String, notes: String },
+    Unsupported {
+        version: String,
+        releases: Vec<ReleaseNotesDto>,
+    },
+    Available {
+        version: String,
+        releases: Vec<ReleaseNotesDto>,
+    },
 }
 
 #[derive(Clone, Serialize)]
@@ -137,7 +149,7 @@ pub async fn check_for_update(
         let platform = Platform::current()?;
         let result = select_update(&installed, platform, fetch_releases()?);
         runtime.set_available(match &result {
-            CheckResult::Available { release } => Some((**release).clone()),
+            CheckResult::Available { release, .. } => Some((**release).clone()),
             _ => None,
         });
         Ok::<_, String>((result, locale))
@@ -241,18 +253,29 @@ enum InstallOutcome {
 fn check_dto(result: CheckResult, locale: &str) -> CheckResultDto {
     match result {
         CheckResult::UpToDate => CheckResultDto::UpToDate,
-        CheckResult::Unsupported { version } => CheckResultDto::Unsupported {
+        CheckResult::Unsupported { version, releases } => CheckResultDto::Unsupported {
             version: version.to_string(),
+            releases: release_notes_dto(releases, locale),
         },
-        CheckResult::Available { release } => CheckResultDto::Available {
+        CheckResult::Available { release, releases } => CheckResultDto::Available {
+            version: release.version.to_string(),
+            releases: release_notes_dto(releases, locale),
+        },
+    }
+}
+
+fn release_notes_dto(releases: Vec<ReleaseNotes>, locale: &str) -> Vec<ReleaseNotesDto> {
+    releases
+        .into_iter()
+        .map(|release| ReleaseNotesDto {
             version: release.version.to_string(),
             notes: if locale == "fr" {
                 release.notes_fr
             } else {
                 release.notes_en
             },
-        },
-    }
+        })
+        .collect()
 }
 
 fn update_error_code(message: &str) -> ErrorCode {

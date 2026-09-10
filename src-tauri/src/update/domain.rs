@@ -47,10 +47,23 @@ impl Platform {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReleaseNotes {
+    pub version: Version,
+    pub notes_fr: String,
+    pub notes_en: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CheckResult {
     UpToDate,
-    Unsupported { version: Version },
-    Available { release: Box<Release> },
+    Unsupported {
+        version: Version,
+        releases: Vec<ReleaseNotes>,
+    },
+    Available {
+        release: Box<Release>,
+        releases: Vec<ReleaseNotes>,
+    },
 }
 
 pub fn stable_version(tag: &str) -> Option<Version> {

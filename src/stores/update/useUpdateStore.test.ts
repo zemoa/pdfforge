@@ -25,12 +25,20 @@ describe("update store", () => {
   });
 
   it("shows an available update after an explicit search", async () => {
-    mocks.check.mockResolvedValue({ kind: "available", version: "1.2.0", notes: "Notes" });
+    const result = {
+      kind: "available",
+      version: "1.2.0",
+      releases: [
+        { version: "1.2.0", notes: "Latest notes" },
+        { version: "1.1.0", notes: "Intermediate notes" },
+      ],
+    };
+    mocks.check.mockResolvedValue(result);
     const update = useUpdateStore();
 
     await update.check("en");
 
-    expect(update.result).toEqual({ kind: "available", version: "1.2.0", notes: "Notes" });
+    expect(update.result).toEqual(result);
     expect(update.phase).toBe("idle");
   });
 

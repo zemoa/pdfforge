@@ -83,6 +83,7 @@ export default {
     manualBody:
       "PDFForge {version} a été téléchargé dans votre dossier Téléchargements pour un remplacement manuel.",
     manualTitle: "Remplacement manuel nécessaire",
+    releaseNotes: "Notes des versions manquantes",
     restore: "Restaurer la version précédente",
     title: "À propos et mises à jour",
     unsupported: "Cette version n’est pas disponible pour votre système.",

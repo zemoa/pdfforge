@@ -38,9 +38,21 @@ watch(show, (opened) => {
     <NAlert v-if="update.result?.kind === 'unsupported'" type="warning">
       {{ t("update.unsupported") }}
     </NAlert>
-    <section v-if="update.result?.kind === 'available'" class="available-update">
-      <NText strong>{{ t("update.available", { version: update.result.version }) }}</NText>
-      <p v-if="update.result.notes" class="update-notes">{{ update.result.notes }}</p>
+    <section v-if="update.result && update.result.kind !== 'upToDate'" class="available-update">
+      <NText v-if="update.result.kind === 'available'" strong>
+        {{ t("update.available", { version: update.result.version }) }}
+      </NText>
+      <div
+        class="update-releases"
+        role="region"
+        :aria-label="t('update.releaseNotes')"
+        tabindex="0"
+      >
+        <section v-for="release in update.result.releases" :key="release.version">
+          <h3 class="update-version">PDFForge {{ release.version }}</h3>
+          <p v-if="release.notes" class="update-notes">{{ release.notes }}</p>
+        </section>
+      </div>
     </section>
     <section v-if="update.phase === 'downloading'" class="update-progress">
       <NText>{{ t("update.downloading") }}</NText>
@@ -99,6 +111,19 @@ watch(show, (opened) => {
 
 .update-notes {
   margin: 0;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.update-releases {
+  display: grid;
+  gap: 1.2rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.update-version {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
 }
 </style>

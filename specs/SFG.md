@@ -2,7 +2,7 @@
 
 ## Statut du document
 
-Spécification fonctionnelle générale mise à jour le 6 septembre 2026. Elle ne
+Spécification fonctionnelle générale mise à jour le 10 septembre 2026. Elle ne
 contient que les besoins explicitement confirmés par l'utilisateur final. Toute
 nouvelle règle doit être validée avant d'être ajoutée.
 
@@ -182,7 +182,11 @@ transport réseau, sans exploitation par PDFForge.
 Si aucune version n'est disponible, l'application affiche « PDFForge est à
 jour. ». Si aucune version n'est fournie pour la plateforme courante, elle
 affiche « Cette version n'est pas disponible pour votre système. ». Si une
-version est disponible, l'application affiche son numéro et ses notes. Chaque
+version est disponible, l'application affiche son numéro et les notes de toutes
+les Releases stables plus récentes que la version installée, regroupées par
+version de la plus récente à la plus ancienne dans une liste défilante. Ces notes
+restent consultables si la dernière version est indisponible pour le système.
+Le téléchargement et l'installation ciblent la dernière version. Chaque
 Release fournit des notes françaises et anglaises ; les notes françaises sont
 affichées lorsque la langue de l'utilisateur est le français, et les notes
 anglaises dans tous les autres cas. Aucun canal alpha, bêta ou préversion n'est
