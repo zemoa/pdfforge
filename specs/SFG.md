@@ -96,6 +96,11 @@ l'application ajoute uniquement les PDF situés à sa racine, dans l'ordre
 alphabétique, puis l'utilisateur peut modifier librement cet ordre. La liste
 affiche le nom de chaque PDF et son chemin complet au survol.
 
+Dans la zone centrale, l'utilisateur réagence les PDF en glissant directement
+leurs vignettes, sans poignée ni boutons d'action sur celles-ci. Dans la liste
+de gauche, les flèches de réagencement sont placées à gauche de chaque document,
+l'une au-dessus de l'autre. Les deux vues conservent le même ordre.
+
 L'application vérifie chaque PDF dès son ajout. Elle ignore les fichiers qui
 ne sont pas des PDF et affiche un récapitulatif des fichiers ainsi ignorés. Si
 un PDF est protégé par mot de passe, illisible ou inaccessible, elle ne demande

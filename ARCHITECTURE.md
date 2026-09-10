@@ -94,6 +94,21 @@ complete a user-requested window close after the merge close guard has allowed
 it. Opening a successful output happens in the Rust backend through the opener
 plugin, never as a renderer-exposed broad path-opening permission.
 
+### Merge source ordering controls (2026-09-10)
+
+The source list and document cards share the existing merge-store ordering
+intentions. Each prepared occurrence receives a session-local frontend ID so
+duplicate paths remain independently addressable. Only the ordered source paths
+cross the existing IPC boundary; PDF processing remains in Rust.
+
+A UI-only pointer composable handles insertion feedback, edge scrolling and
+gesture cancellation, committing one move on release. Native HTML drag and drop
+is avoided because it conflicts with Tauri's native file-drop handling on
+Windows. Tauri file drops remain enabled, with no new dependency, permission or
+CSP change. The entire central thumbnail starts the gesture without separate
+handles or action buttons. Keyboard-accessible up/down arrows, stacked to the
+left of each sidebar entry, provide the same ordering actions.
+
 ### PDF split domain and embedded renderer (2026-09-01)
 
 FTR-002 introduces the independent `split` Rust business domain. Its application

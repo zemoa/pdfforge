@@ -13,19 +13,30 @@ import {
   NThing,
   NTooltip,
 } from "naive-ui";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import DestinationFolderInput from "../components/DestinationFolderInput.vue";
 import LineIcon from "../components/LineIcon.vue";
+import ReorderControls from "../components/ReorderControls.vue";
 import ToolWorkspaceShell from "../components/ToolWorkspaceShell.vue";
+import { usePointerReorder } from "../composables/usePointerReorder";
 import { useMergeStore } from "../stores/merge/useMergeStore";
 
 const { t } = useI18n();
 const merge = useMergeStore();
 const showSummary = ref(false);
-const dragIndex = ref<number | null>(null);
+const documentStage = ref<HTMLElement | null>(null);
 const showIncidents = computed(() => merge.pendingInspection !== null);
+const reorderDisabled = computed(
+  () => merge.phase === "running" || showSummary.value || showIncidents.value,
+);
+const reorder = usePointerReorder({
+  entryIds: () => merge.sources.map((source) => source.entryId),
+  enabled: () => !reorderDisabled.value,
+  container: () => documentStage.value,
+  move: (from, to) => merge.reorderSource(from, to),
+});
 const totalPages = computed(() =>
   merge.sources.reduce((total, source) => total + source.pageCount, 0),
 );
@@ -40,10 +51,13 @@ async function openSummary() {
   if (await merge.requestSummary()) showSummary.value = true;
 }
 
-function dropSource(index: number) {
-  if (dragIndex.value !== null) merge.reorderSource(dragIndex.value, index);
-  dragIndex.value = null;
-}
+watch(
+  () => merge.outputPreview,
+  (preview) => {
+    if (!preview) showSummary.value = false;
+  },
+  { flush: "sync" },
+);
 </script>
 
 <template>
@@ -72,12 +86,14 @@ function dropSource(index: number) {
         </div>
 
         <div v-if="merge.sources.length" class="document-list">
-          <div
-            v-for="(source, index) in merge.sources"
-            :key="`${source.path}-${index}`"
-            class="document-row"
-          >
-            <LineIcon name="document" :size="16" />
+          <div v-for="(source, index) in merge.sources" :key="source.entryId" class="document-row">
+            <ReorderControls
+              :position="index + 1"
+              :count="merge.sources.length"
+              :name="source.name"
+              :disabled="reorderDisabled"
+              @move="merge.moveSource(index, $event)"
+            />
             <NTooltip trigger="hover"
               ><template #trigger
                 ><div class="document-row__copy">
@@ -90,6 +106,7 @@ function dropSource(index: number) {
               quaternary
               class="document-row__remove"
               :aria-label="t('merge.remove')"
+              :disabled="merge.phase === 'running'"
               @click="merge.removeSource(index)"
               ><LineIcon name="trash" :size="14"
             /></NButton>
@@ -157,40 +174,39 @@ function dropSource(index: number) {
               {{ t("common.pageCount", { count: totalPages }) }}</span
             >
           </div>
-          <NButton quaternary size="small" :aria-label="t('merge.order')"
-            ><LineIcon name="grid" :size="16"
-          /></NButton>
         </div>
+        <NText v-if="merge.sources.length > 1" depth="3" class="panel-hint">{{
+          t("merge.reorderHint")
+        }}</NText>
         <NEmpty
           v-if="!merge.sources.length"
           class="workspace-empty"
           :description="t('merge.emptySources')"
-          ><template #extra
-            ><NButton class="primary-document-action" @click="merge.choosePdfFiles"
-              ><LineIcon name="add" :size="15" /> {{ t("merge.addFiles") }}</NButton
-            ></template
-          ></NEmpty
-        >
-        <div v-else class="document-stage">
-          <template v-for="(source, index) in merge.sources" :key="`${source.path}-${index}`">
+        />
+        <div v-else ref="documentStage" class="document-stage">
+          <template v-for="(source, index) in merge.sources" :key="source.entryId">
             <article
               class="pdf-document"
-              draggable="true"
-              @dragstart="dragIndex = index"
-              @dragover.prevent
-              @drop="dropSource(index)"
+              :data-reorder-id="source.entryId"
+              :class="[
+                reorder.itemClasses(source.entryId),
+                { 'pdf-document--movable': !reorderDisabled && merge.sources.length > 1 },
+              ]"
+              :aria-label="t('merge.dragSource', { name: source.name })"
+              tabindex="-1"
+              @pointerdown="reorder.start($event, source.entryId)"
+              @dragstart.prevent
             >
-              <button
-                class="pdf-document__remove"
-                type="button"
-                :aria-label="t('merge.remove')"
-                @click="merge.removeSource(index)"
-              >
-                <LineIcon name="trash" :size="14" />
-              </button>
               <div class="pdf-paper">
                 <div class="pdf-paper__header">
                   <LineIcon name="document" :size="15" /><span>PDF</span>
+                  <span
+                    class="pdf-document__position"
+                    :aria-label="
+                      t('merge.position', { position: index + 1, count: merge.sources.length })
+                    "
+                    >{{ index + 1 }}</span
+                  >
                 </div>
                 <div class="pdf-paper__title">{{ source.name.replace(/\.pdf$/i, "") }}</div>
                 <span
@@ -203,14 +219,11 @@ function dropSource(index: number) {
                   {{ source.pageCount }} {{ t("common.pagesShort") }}
                 </div>
               </div>
-              <div class="pdf-document__caption">
+              <div class="pdf-document__caption" :title="source.path">
                 <strong>{{ source.name }}</strong
                 ><span>{{ t("common.pageCount", { count: source.pageCount }) }}</span>
               </div>
             </article>
-            <div v-if="index < merge.sources.length - 1" class="insertion-lane" aria-hidden="true">
-              <i />
-            </div>
           </template>
         </div>
       </template>
@@ -262,8 +275,8 @@ function dropSource(index: number) {
     :title="t('merge.summaryTitle')"
     style="width: min(92vw, 38rem)"
     ><NList bordered
-      ><NListItem v-for="source in merge.sources" :key="source.path">{{
-        source.name
+      ><NListItem v-for="(source, index) in merge.sources" :key="source.entryId">{{
+        `${index + 1}. ${source.name}`
       }}</NListItem></NList
     >
     <p>
@@ -277,6 +290,7 @@ function dropSource(index: number) {
         ><NButton @click="showSummary = false">{{ t("merge.back") }}</NButton
         ><NButton
           type="primary"
+          :disabled="!merge.outputPreview || merge.phase === 'running'"
           @click="
             showSummary = false;
             merge.confirmMerge();
@@ -316,9 +330,14 @@ function dropSource(index: number) {
   line-height: 1.45;
 }
 .document-list {
+  align-content: start;
   display: grid;
-  gap: 0.2rem;
+  flex: 1;
+  gap: 0.5rem;
   margin: 0.85rem 0;
+  min-height: 6rem;
+  overflow: auto;
+  padding: 0.25rem;
 }
 .document-row {
   align-items: center;
@@ -327,6 +346,7 @@ function dropSource(index: number) {
   gap: 0.55rem;
   grid-template-columns: auto minmax(0, 1fr) auto;
   padding: 0.45rem 0.35rem;
+  position: relative;
 }
 .document-row:hover {
   background: var(--surface);
@@ -356,6 +376,7 @@ function dropSource(index: number) {
   border-top: 1px solid var(--border);
   margin-top: auto;
   padding-top: 1rem;
+  flex-shrink: 0;
 }
 label {
   color: var(--text-secondary);
@@ -385,6 +406,7 @@ label {
   align-items: baseline;
   display: flex;
   gap: 0.65rem;
+  flex-wrap: wrap;
 }
 .toolbar-title {
   color: var(--text);
@@ -400,12 +422,9 @@ label {
   flex: 1;
   place-items: center;
 }
-.primary-document-action {
-  background: var(--text);
-  color: var(--surface);
-}
 .document-stage {
-  align-content: center;
+  align-content: start;
+  align-items: start;
   display: flex;
   flex: 1;
   flex-wrap: wrap;
@@ -420,6 +439,44 @@ label {
   min-width: 9.5rem;
   position: relative;
   width: min(29%, 12rem);
+}
+.pdf-document--movable {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.pdf-document--movable:active {
+  cursor: grabbing;
+}
+.pdf-document__position {
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+.reorder-dragging {
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  outline: 1px dashed var(--accent);
+}
+.reorder-before::before,
+.reorder-after::after {
+  background: var(--accent);
+  border-radius: 2px;
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+.pdf-document.reorder-before::before,
+.pdf-document.reorder-after::after {
+  bottom: 0;
+  top: 0;
+  width: 3px;
+}
+.pdf-document.reorder-before::before {
+  left: -0.6rem;
+}
+.pdf-document.reorder-after::after {
+  right: -0.6rem;
 }
 .pdf-paper {
   background: #fff;
@@ -485,44 +542,6 @@ label {
   color: var(--text-tertiary);
   font-size: 0.63rem;
 }
-.pdf-document__remove {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: grid;
-  height: 1.7rem;
-  padding: 0;
-  place-items: center;
-  position: absolute;
-  right: 0.4rem;
-  top: 0.4rem;
-  width: 1.7rem;
-  z-index: 1;
-}
-.insertion-lane {
-  align-items: center;
-  display: flex;
-  height: 14rem;
-  justify-content: center;
-  position: relative;
-  width: 1px;
-}
-.insertion-lane::before {
-  background: var(--border);
-  content: "";
-  height: 3rem;
-  width: 1px;
-}
-.insertion-lane i {
-  background: var(--accent);
-  border-radius: 50%;
-  height: 0.3rem;
-  position: absolute;
-  width: 0.3rem;
-}
 .process-state {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -561,9 +580,6 @@ label {
 @media (max-width: 48rem) {
   .pdf-document {
     width: min(42%, 12rem);
-  }
-  .insertion-lane {
-    display: none;
   }
 }
 </style>

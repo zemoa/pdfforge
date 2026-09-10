@@ -3,6 +3,8 @@ type IconName =
   | "add"
   | "chevronLeft"
   | "chevronRight"
+  | "chevronUp"
+  | "chevronDown"
   | "document"
   | "folder"
   | "grid"
@@ -27,6 +29,8 @@ const paths: Record<IconName, readonly string[]> = {
   add: ["M12 5v14", "M5 12h14"],
   chevronLeft: ["m15 18-6-6 6-6"],
   chevronRight: ["m9 18 6-6-6-6"],
+  chevronUp: ["m6 15 6-6 6 6"],
+  chevronDown: ["m6 9 6 6 6-6"],
   document: [
     "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z",
     "M14 2v6h6",

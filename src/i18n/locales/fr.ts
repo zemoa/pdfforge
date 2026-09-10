@@ -118,6 +118,12 @@ export default {
     outputName: "Nom du fichier",
     outputPlaceholder: "document-fusionne",
     order: "Ordre",
+    dragSource: "Faire glisser {name} pour le déplacer",
+    moveUp: "Monter {name}",
+    moveDown: "Descendre {name}",
+    position: "Position {position} sur {count}",
+    reorderHint:
+      "Faites glisser les vignettes ou utilisez les flèches de la liste de gauche pour changer l’ordre des PDF.",
     processing: "Fusion des PDF…",
     progress: "{current} pages traitées sur {total}",
     remove: "Retirer",

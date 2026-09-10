@@ -32,6 +32,19 @@ survol. Le même PDF peut y apparaître plusieurs fois. L'utilisateur peut ajout
 ou retirer des PDF, les réordonner par glisser-déposer, et les déplacer vers le
 haut ou le bas avec des actions dédiées.
 
+Le réagencement s'effectue en glissant directement les vignettes dans la zone
+centrale, sans poignée ni boutons d'action sur celles-ci. Dans la liste de
+gauche, deux flèches « Monter » et « Descendre », placées à gauche de chaque
+document et superposées verticalement, permettent de modifier l'ordre et sont
+accessibles au clavier. La suppression d'un PDF reste disponible dans cette
+liste. Les deux vues restent synchronisées et les vignettes affichent leur
+position.
+
+Un repère indique l'insertion avant ou après une vignette. Le déplacement est
+appliqué au relâchement. Échap, l'annulation du geste ou un dépôt hors zone
+conserve l'ordre initial. Si la liste change pendant le geste, celui-ci est
+annulé. La zone centrale défile lorsque le pointeur atteint son bord.
+
 La fusion n'est disponible que lorsqu'au moins deux PDF valides sont présents.
 Si ce n'est plus le cas, la liste est conservée, mais l'action de fusion est
 désactivée.

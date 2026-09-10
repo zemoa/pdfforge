@@ -11,8 +11,13 @@ import {
 import { errorCodeFrom, type ErrorCode } from "../../application/error";
 import { createPastedDestinationIntent } from "../destination/pasteDestination";
 
+interface MergeEntry extends MergeSource {
+  entryId: string;
+}
+
 export const useMergeStore = defineStore("merge", () => {
-  const sources = ref<MergeSource[]>([]);
+  const sources = ref<MergeEntry[]>([]);
+  let nextEntryId = 0;
   const pendingInspection = ref<MergeInspection | null>(null);
   const ignoredNonPdfs = ref<string[]>([]);
   const outputName = ref("");
@@ -69,7 +74,7 @@ export const useMergeStore = defineStore("merge", () => {
       pendingInspection.value = inspection;
       return;
     }
-    sources.value.push(...inspection.accepted);
+    appendSources(inspection.accepted);
     outputPreview.value = null;
   }
 
@@ -92,7 +97,7 @@ export const useMergeStore = defineStore("merge", () => {
 
   function ignoreInvalidSources() {
     if (phase.value === "running" || !pendingInspection.value) return;
-    sources.value.push(...pendingInspection.value.accepted);
+    appendSources(pendingInspection.value.accepted);
     pendingInspection.value = null;
     outputPreview.value = null;
   }
@@ -104,26 +109,39 @@ export const useMergeStore = defineStore("merge", () => {
   }
 
   function removeSource(index: number) {
-    if (phase.value === "running") return;
+    if (phase.value === "running" || !isSourceIndex(index)) return;
     sources.value.splice(index, 1);
     outputPreview.value = null;
   }
 
   function moveSource(index: number, direction: -1 | 1) {
-    if (phase.value === "running") return;
-    const target = index + direction;
-    if (target < 0 || target >= sources.value.length) return;
-    const [source] = sources.value.splice(index, 1);
-    sources.value.splice(target, 0, source);
-    outputPreview.value = null;
+    reorderSource(index, index + direction);
   }
 
   function reorderSource(from: number, to: number) {
     if (phase.value === "running") return;
-    if (from === to || to < 0 || to >= sources.value.length) return;
+    if (from === to || !isSourceIndex(from) || !isSourceIndex(to)) return;
     const [source] = sources.value.splice(from, 1);
     sources.value.splice(to, 0, source);
     outputPreview.value = null;
+  }
+
+  function isSourceIndex(index: number) {
+    return Number.isInteger(index) && index >= 0 && index < sources.value.length;
+  }
+
+  function appendSources(accepted: MergeSource[]) {
+    sources.value.push(
+      ...accepted.map((source) => ({ ...source, entryId: String(nextEntryId++) })),
+    );
+  }
+
+  function preparationKey() {
+    return JSON.stringify([
+      sources.value.map((source) => source.entryId),
+      destination.value,
+      outputName.value,
+    ]);
   }
 
   function renameOutput(name: string) {
@@ -145,9 +163,12 @@ export const useMergeStore = defineStore("merge", () => {
 
   async function requestSummary() {
     if (!canRequestSummary.value) return null;
+    const requestedPreparation = preparationKey();
     try {
       errorCode.value = null;
-      outputPreview.value = await mergeClient.previewOutput(destination.value, outputName.value);
+      const preview = await mergeClient.previewOutput(destination.value, outputName.value);
+      if (requestedPreparation !== preparationKey() || phase.value === "running") return null;
+      outputPreview.value = preview;
       return outputPreview.value;
     } catch (error) {
       errorCode.value = errorCodeFrom(error, "mergeFailed");
